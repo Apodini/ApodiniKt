@@ -11,10 +11,10 @@ import kotlin.coroutines.CoroutineContext
 class TestWebService : WebService {
     override fun ComponentBuilder.invoke() {
         text("Hello World")
-        group("swift") {
-            text("Hello, Swift")
-            group("5") {
-                text("Hello, Swift 5")
+        group("kotlin") {
+            text("Hello, Kotlin")
+            group("1.4") {
+                text("Hello, Kotlin 1.4")
             }
         }
 
