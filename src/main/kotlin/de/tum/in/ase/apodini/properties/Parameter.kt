@@ -26,8 +26,7 @@ data class Parameter<T : Any> internal constructor(
     lateinit var value: T
 
     override fun PropertyCollector.collect(property: KProperty<*>) {
-        name = name ?: property.name
-        registerParameter(id, name!!, type)
+        registerParameter(id, name ?: property.name, type)
     }
 
     override fun inject(request: Request) {
@@ -35,6 +34,6 @@ data class Parameter<T : Any> internal constructor(
     }
 
     operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-        TODO("Not implemented yet")
+        return value
     }
 }

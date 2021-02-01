@@ -2,6 +2,7 @@ package de.tum.`in`.ase.apodini.request
 
 import de.tum.`in`.ase.apodini.Handler
 import de.tum.`in`.ase.apodini.compute
+import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.internal.RequestInjectable
 import de.tum.`in`.ase.apodini.properties.DynamicProperty
 import de.tum.`in`.ase.apodini.types.Type
@@ -12,7 +13,7 @@ import kotlin.reflect.typeOf
 
 interface Request : CoroutineContext {
     fun <T> parameter(id: UUID): T
-    fun <T> environment(): T
+    fun <T> environment(key: EnvironmentKey<T>): T
 }
 
 suspend fun <O : Type<O>> Request.handle(
@@ -54,5 +55,29 @@ private fun <T> Any.modify(lookedUpType: KType, block: (T) -> T) {
 }
 
 private fun <T> T.shallowCopy(): T {
-    TODO("Not implemented yet")
+    if (this == null)
+        return this
+
+    val type = this!!::class
+
+    if (type.isData) {
+        val copy = type.members.first { it.name == "copy" }
+        @Suppress("UNCHECKED_CAST")
+        return copy.call(this) as T
+    }
+
+    val constructor = type
+            .constructors
+            .firstOrNull { constructor -> constructor.parameters.all { it.isOptional } } ?: return this
+
+    return constructor
+            .call()
+            .also { newObject ->
+                for (field in type.java.fields) {
+                    val wasAccessible = field.isAccessible
+                    field.isAccessible = true
+                    field.set(newObject, field.get(this))
+                    field.isAccessible = wasAccessible
+                }
+            }
 }
