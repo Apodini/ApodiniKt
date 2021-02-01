@@ -12,18 +12,75 @@ sealed class TypeDefinition<T>(
     abstract fun Encoder.encode(value: T)
 }
 
-class Scalar<T : Serializable> private constructor(
-    val name: String,
-    documentation: String? = null
-) : TypeDefinition<T>(documentation) {
+sealed class ScalarType<T>(val name: String) : TypeDefinition<T>(null)
 
-    override fun Encoder.encode(value: T) {
+private object StringType : ScalarType<String>("String") {
+    override fun Encoder.encode(value: String) {
         encode(value)
     }
-
 }
 
-class Enum<T : Serializable> private constructor(
+private object IntType : ScalarType<Int>("Int") {
+    override fun Encoder.encode(value: Int) {
+        encode(value)
+    }
+}
+
+private object BooleanType : ScalarType<Boolean>("Boolean") {
+    override fun Encoder.encode(value: Boolean) {
+        encode(value)
+    }
+}
+
+private object DoubleType : ScalarType<Double>("Double") {
+    override fun Encoder.encode(value: Double) {
+        encode(value)
+    }
+}
+
+class Scalar<T, Encoded> private constructor(
+    name: String? = null,
+    private val kind: ScalarType<Encoded>,
+    documentation: String? = null,
+    private val extract: T.() -> Encoded
+) : TypeDefinition<T>(documentation) {
+    private val name = name ?: kind
+
+    override fun Encoder.encode(value: T) {
+        val encoded = value.extract()
+        with(kind) {
+            encode(encoded)
+        }
+    }
+
+    companion object {
+        fun <T> string(
+                name: String? = null,
+                documentation: String? = null,
+                extract: (T) -> String
+        ): Scalar<T, String> = Scalar(name, StringType, documentation, extract)
+
+        fun <T> int(
+                name: String? = null,
+                documentation: String? = null,
+                extract: (T) -> Int
+        ): Scalar<T, Int> = Scalar(name, IntType, documentation, extract)
+
+        fun <T> boolean(
+                name: String? = null,
+                documentation: String? = null,
+                extract: (T) -> Boolean
+        ): Scalar<T, Boolean> = Scalar(name, BooleanType, documentation, extract)
+
+        fun <T> double(
+                name: String? = null,
+                documentation: String? = null,
+                extract: (T) -> Double
+        ): Scalar<T, Double> = Scalar(name, DoubleType, documentation, extract)
+    }
+}
+
+class Enum<T : Serializable> constructor(
     val name: String,
     val cases: Iterable<String>,
     documentation: String? = null
@@ -35,7 +92,7 @@ class Enum<T : Serializable> private constructor(
 
 }
 
-class Object<T> private constructor(
+class Object<T> constructor(
     val name: String,
     val properties: Map<String, TypeDefinition<*>>,
     documentation: String? = null
@@ -47,7 +104,7 @@ class Object<T> private constructor(
 
 }
 
-class Array<T : Type<T>> private constructor() : TypeDefinition<Iterable<T>>(null) {
+class Array<T : Type<T>> constructor() : TypeDefinition<Iterable<T>>(null) {
     override fun Encoder.encode(value: Iterable<T>) {
         unKeyed {
             value.forEach {
@@ -57,7 +114,7 @@ class Array<T : Type<T>> private constructor() : TypeDefinition<Iterable<T>>(nul
     }
 }
 
-class Nullable<T : Type<T>> private constructor() : TypeDefinition<T?>(null) {
+class Nullable<T : Type<T>> constructor() : TypeDefinition<T?>(null) {
     override fun Encoder.encode(value: T?) {
         value?.let {
             encode(it)
