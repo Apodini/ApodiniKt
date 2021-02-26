@@ -5,7 +5,7 @@ import de.tum.`in`.ase.apodini.compute
 import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.internal.RequestInjectable
 import de.tum.`in`.ase.apodini.properties.DynamicProperty
-import de.tum.`in`.ase.apodini.types.Type
+import de.tum.`in`.ase.apodini.types.CustomType
 import java.util.*
 import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KType
@@ -16,7 +16,7 @@ interface Request : CoroutineContext {
     fun <T> environment(key: EnvironmentKey<T>): T
 }
 
-suspend fun <O : Type<O>> Request.handle(
+suspend fun <O : CustomType<O>> Request.handle(
         handler: Handler<O>
 ): O {
     val newInstance = handler.shallowCopy()

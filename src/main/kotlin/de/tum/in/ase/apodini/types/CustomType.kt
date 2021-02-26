@@ -2,7 +2,7 @@ package de.tum.`in`.ase.apodini.types
 
 import java.io.Serializable
 
-interface Type<Self> {
+interface CustomType<Self : CustomType<Self>> {
     fun definition(): TypeDefinition<Self>
 }
 
@@ -97,14 +97,12 @@ class Object<T> constructor(
     val properties: Map<String, TypeDefinition<*>>,
     documentation: String? = null
 ) : TypeDefinition<T>(documentation) {
-
     override fun Encoder.encode(value: T) {
         TODO("Not yet implemented")
     }
-
 }
 
-class Array<T : Type<T>> constructor() : TypeDefinition<Iterable<T>>(null) {
+class Array<T : CustomType<T>> constructor() : TypeDefinition<Iterable<T>>(null) {
     override fun Encoder.encode(value: Iterable<T>) {
         unKeyed {
             value.forEach {
@@ -114,7 +112,7 @@ class Array<T : Type<T>> constructor() : TypeDefinition<Iterable<T>>(null) {
     }
 }
 
-class Nullable<T : Type<T>> constructor() : TypeDefinition<T?>(null) {
+class Nullable<T : CustomType<T>> constructor() : TypeDefinition<T?>(null) {
     override fun Encoder.encode(value: T?) {
         value?.let {
             encode(it)
