@@ -6,8 +6,10 @@ import de.tum.`in`.ase.apodini.types.TypeDefinition
 class SemanticModel internal constructor(
         val endpoints: List<Endpoint>
 ) {
-    class Endpoint internal constructor(
-            val typeDefinition: TypeDefinition<*>,
-            val handler: Handler<*>
-    )
+    abstract class Endpoint
+
+    class ConcreteEndpoint<T>(
+            val typeDefinition: TypeDefinition<T>,
+            val handler: Handler<T>
+    ) : Endpoint()
 }

@@ -4,11 +4,11 @@ import java.io.Serializable
 
 interface Encoder {
     interface KeyedContainer {
-        fun <T : CustomType<T>> encode(key: String, value: T)
+        fun encode(key: String, init: Encoder.() -> Unit)
     }
 
     interface UnKeyedContainer {
-        fun <T : CustomType<T>> encode(value: T)
+        fun encode(init: Encoder.() -> Unit)
     }
 
     fun <T : Serializable> encode(value: T)

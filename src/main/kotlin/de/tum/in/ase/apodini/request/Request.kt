@@ -4,6 +4,7 @@ import de.tum.`in`.ase.apodini.Handler
 import de.tum.`in`.ase.apodini.compute
 import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.internal.RequestInjectable
+import de.tum.`in`.ase.apodini.internal.createInstance
 import de.tum.`in`.ase.apodini.properties.DynamicProperty
 import de.tum.`in`.ase.apodini.types.CustomType
 import java.util.*
@@ -66,18 +67,12 @@ private fun <T> T.shallowCopy(): T {
         return copy.call(this) as T
     }
 
-    val constructor = type
-            .constructors
-            .firstOrNull { constructor -> constructor.parameters.all { it.isOptional } } ?: return this
-
-    return constructor
-            .call()
-            .also { newObject ->
-                for (field in type.java.fields) {
-                    val wasAccessible = field.isAccessible
-                    field.isAccessible = true
-                    field.set(newObject, field.get(this))
-                    field.isAccessible = wasAccessible
-                }
-            }
+    return createInstance(type).also { newObject ->
+        for (field in type.java.fields) {
+            val wasAccessible = field.isAccessible
+            field.isAccessible = true
+            field.set(newObject, field.get(this))
+            field.isAccessible = wasAccessible
+        }
+    }
 }
