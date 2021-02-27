@@ -21,8 +21,11 @@ suspend fun <O : CustomType<O>> Request.handle(
         handler: Handler<O>
 ): O {
     val newInstance = handler.shallowCopy()
-    newInstance.modify<RequestInjectable> {  injectable ->
+    newInstance.modify<RequestInjectable> { injectable ->
         injectable.shallowCopy().apply { inject(this@handle) }
+    }
+    newInstance.traverse<DynamicProperty> { property ->
+        property.update()
     }
     return newInstance.compute(this)
 }
@@ -39,15 +42,40 @@ private fun <T> Any.modify(lookedUpType: KType, block: (T) -> T) {
         val wasAccessible = field.isAccessible
         field.isAccessible = true
         when (val value = field.get(this)) {
+            type.kotlin.isInstance(value) -> {
+                @Suppress("UNCHECKED_CAST")
+                val newValue = block(value as T)
+                field.set(this, newValue)
+            }
             is DynamicProperty -> {
                 val newValue = value.shallowCopy()
                 newValue.modify(lookedUpType, block)
                 field.set(this, newValue)
             }
+            else -> {}
+        }
+        field.isAccessible = wasAccessible
+    }
+}
+
+@OptIn(ExperimentalStdlibApi::class)
+private suspend inline fun <reified T> Any.traverse(noinline block: suspend (T) -> Unit) {
+    traverse(typeOf<T>(), block)
+}
+
+private suspend fun <T> Any.traverse(lookedUpType: KType, block: suspend (T) -> Unit) {
+    val type = this::class.java
+
+    for (field in type.fields) {
+        val wasAccessible = field.isAccessible
+        field.isAccessible = true
+        when (val value = field.get(this)) {
             type.kotlin.isInstance(value) -> {
                 @Suppress("UNCHECKED_CAST")
-                val newValue = block(value as T)
-                field.set(this, newValue)
+                block(value as T)
+            }
+            is DynamicProperty -> {
+                value.traverse(lookedUpType, block)
             }
             else -> {}
         }
