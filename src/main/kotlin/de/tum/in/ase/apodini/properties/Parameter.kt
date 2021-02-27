@@ -2,7 +2,6 @@ package de.tum.`in`.ase.apodini.properties
 
 import de.tum.`in`.ase.apodini.internal.PropertyCollector
 import de.tum.`in`.ase.apodini.internal.RequestInjectable
-import de.tum.`in`.ase.apodini.properties.options.OptionKey
 import de.tum.`in`.ase.apodini.properties.options.OptionSet
 import de.tum.`in`.ase.apodini.properties.options.OptionsBuilder
 import de.tum.`in`.ase.apodini.request.Request
@@ -28,16 +27,17 @@ internal fun <T : Any> parameter(
     return Parameter(name, type, OptionSet(init))
 }
 
-data class Parameter<T : Any> internal constructor(
-        var name: String?,
+class Parameter<T : Any> internal constructor(
+        private val name: String?,
         private val type: KType,
-        val options: OptionSet<Parameter<T>>
+        private val options: OptionSet<Parameter<T>>
 ): RequestInjectable {
     private val id = UUID.randomUUID()
     lateinit var value: T
 
     override fun PropertyCollector.collect(property: KProperty<*>) {
-        registerParameter(id, name ?: property.name, type)
+        @Suppress("UNCHECKED_CAST")
+        registerParameter(id, name ?: property.name, type, options as OptionSet<Parameter<*>>)
     }
 
     override fun inject(request: Request) {
