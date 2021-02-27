@@ -11,8 +11,8 @@ import de.tum.`in`.ase.apodini.properties.parameter
 import de.tum.`in`.ase.apodini.properties.pathParameter
 import kotlin.coroutines.CoroutineContext
 
-class TestWebService : WebService {
-    private val id = pathParameter<String>()
+object TestWebService : WebService {
+    private val userId = pathParameter()
 
     override fun ComponentBuilder.invoke() {
         text("Hello World")
@@ -23,8 +23,12 @@ class TestWebService : WebService {
             }
         }
 
-        group("user", id) {
-            GreeterForUser(id)
+        group("user", userId) {
+            GreeterForUser(userId)
+
+            group("post") {
+                PostsForUser(userId)
+            }
         }
 
         group("greeting") {
@@ -33,11 +37,19 @@ class TestWebService : WebService {
     }
 }
 
-class GreeterForUser(id: PathParameter<String>) : Handler<String> {
+class GreeterForUser(id: PathParameter) : Handler<String> {
     private val id by id
 
     override suspend fun CoroutineContext.compute(): String {
         return "Hello, User $id"
+    }
+}
+
+class PostsForUser(id: PathParameter) : Handler<String> {
+    private val id by id
+
+    override suspend fun CoroutineContext.compute(): String {
+        return "Posts from user $id"
     }
 }
 
