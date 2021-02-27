@@ -10,25 +10,25 @@ sealed class ScalarType<T>(val name: String) : TypeDefinition<T>(null)
 
 internal object StringType : ScalarType<String>("String") {
     override fun Encoder.encode(value: String) {
-        encode(value)
+        encodeString(value)
     }
 }
 
 internal object IntType : ScalarType<Int>("Int") {
     override fun Encoder.encode(value: Int) {
-        encode(value)
+        encodeInt(value)
     }
 }
 
 internal object BooleanType : ScalarType<Boolean>("Boolean") {
     override fun Encoder.encode(value: Boolean) {
-        encode(value)
+        encodeBoolean(value)
     }
 }
 
 internal object DoubleType : ScalarType<Double>("Double") {
     override fun Encoder.encode(value: Double) {
-        encode(value)
+        encodeDouble(value)
     }
 }
 
@@ -82,7 +82,7 @@ class Enum<T> constructor(
         documentation: String? = null
 ) : TypeDefinition<T>(documentation) {
     override fun Encoder.encode(value: T) {
-        encode(caseNameFactory(value))
+        encodeString(caseNameFactory(value))
     }
 }
 
@@ -144,6 +144,6 @@ class Nullable<T> constructor(private val definition: TypeDefinition<T>) : TypeD
             with(definition) {
                 encode(unwrapped)
             }
-        }
+        } ?: encodeNull()
     }
 }
