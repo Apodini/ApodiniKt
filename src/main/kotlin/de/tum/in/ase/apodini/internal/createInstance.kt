@@ -7,7 +7,7 @@ import kotlin.reflect.KClass
 private val reflectionFactory = ReflectionFactory.getReflectionFactory()
 private val constructors = mutableMapOf<KClass<*>, Constructor<*>>()
 
-fun <T : Any> createInstance(type: KClass<T>): T {
+internal fun <T : Any> createInstance(type: KClass<T>): T {
     type.constructors
             .firstOrNull { constructor -> constructor.parameters.all { it.isOptional } }
             ?.let {
