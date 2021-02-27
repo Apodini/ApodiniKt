@@ -1,7 +1,5 @@
 package de.tum.`in`.ase.apodini.types
 
-import java.io.Serializable
-
 sealed class TypeDefinition<T>(
         val documentation: String?
 ) {
