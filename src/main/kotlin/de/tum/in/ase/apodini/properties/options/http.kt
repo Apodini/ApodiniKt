@@ -5,7 +5,7 @@ import de.tum.`in`.ase.apodini.properties.Parameter
 enum class HTTPParameterMode {
     Body, Path, Query, Header;
 
-    companion object {
+    companion object : OptionKey<Parameter<*>, HTTPParameterMode> {
         val body = Body
         val path = Path
         val query = Query
@@ -14,7 +14,9 @@ enum class HTTPParameterMode {
 }
 
 fun OptionsBuilder<Parameter<*>>.http(mode: HTTPParameterMode.Companion.() -> HTTPParameterMode) {
-    HTTPParameterModeOptionKey to HTTPParameterMode.mode()
+    http(HTTPParameterMode.mode())
 }
 
-object HTTPParameterModeOptionKey : OptionKey<Parameter<*>, HTTPParameterMode>
+fun OptionsBuilder<Parameter<*>>.http(mode: HTTPParameterMode) {
+    HTTPParameterMode to mode
+}
