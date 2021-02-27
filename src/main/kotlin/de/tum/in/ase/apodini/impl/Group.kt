@@ -28,32 +28,94 @@ private fun ComponentBuilder.group(names: Collection<String>, init: ComponentBui
 }
 
 @ComponentDsl
-fun <T : Any> ComponentBuilder.group(parameter: PathParameter<T>, init: ComponentBuilder.() -> Unit) {
+fun ComponentBuilder.group(parameter: PathParameter, init: ComponentBuilder.() -> Unit) {
     +Group(Group.Kind.Parameter(parameter), init)
 }
 
 @ComponentDsl
-fun <A : Any> ComponentBuilder.group(name: String, parameter: PathParameter<A>, init: ComponentBuilder.() -> Unit) {
-    group(name) {
-        group(parameter) {
+fun ComponentBuilder.group(c0: String, c1: PathParameter, init: ComponentBuilder.() -> Unit) {
+    group(c0) {
+        group(c1) {
             init()
         }
     }
 }
 
 @ComponentDsl
-fun <A : Any> ComponentBuilder.group(parameter: PathParameter<A>, name: String, init: ComponentBuilder.() -> Unit) {
-    group(parameter) {
-        group(name) {
+fun ComponentBuilder.group(c0: PathParameter, c1: String, init: ComponentBuilder.() -> Unit) {
+    group(c0) {
+        group(c1) {
             init()
         }
     }
 }
 
 @ComponentDsl
-fun <A : Any, B : Any> ComponentBuilder.group(parameterA: PathParameter<A>, parameterB: PathParameter<B>, init: ComponentBuilder.() -> Unit) {
-    group(parameterA) {
-        group(parameterB) {
+fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, init: ComponentBuilder.() -> Unit) {
+    group(c0) {
+        group(c1) {
+            init()
+        }
+    }
+}
+
+@ComponentDsl
+fun ComponentBuilder.group(c0: String, c1: PathParameter, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
+    group(c0, c1) {
+        group(c2) {
+            init()
+        }
+    }
+}
+
+@ComponentDsl
+fun ComponentBuilder.group(c0: PathParameter, c1: String, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
+    group(c0, c1) {
+        group(c2) {
+            init()
+        }
+    }
+}
+
+@ComponentDsl
+fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, c2: String, init: ComponentBuilder.() -> Unit) {
+    group(c0, c1) {
+        group(c2) {
+            init()
+        }
+    }
+}
+
+@ComponentDsl
+fun ComponentBuilder.group(c0: String, c1: String, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
+    group(c0, c1) {
+        group(c2) {
+            init()
+        }
+    }
+}
+
+@ComponentDsl
+fun ComponentBuilder.group(c0: String, c1: PathParameter, c2: String, init: ComponentBuilder.() -> Unit) {
+    group(c0, c1) {
+        group(c2) {
+            init()
+        }
+    }
+}
+@ComponentDsl
+fun ComponentBuilder.group(c0: PathParameter, c1: String, c2: String, init: ComponentBuilder.() -> Unit) {
+    group(c0, c1) {
+        group(c2) {
+            init()
+        }
+    }
+}
+
+@ComponentDsl
+fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
+    group(c0, c1) {
+        group(c2) {
             init()
         }
     }
@@ -70,7 +132,7 @@ private class Group(
             }
         }
 
-        class Parameter<T : Any>(val value: PathParameter<T>) : Kind() {
+        class Parameter(val value: PathParameter) : Kind() {
             override fun asComponentVisitorGroup(): ComponentVisitor.Group {
                 return ComponentVisitor.Group.Parameter(value)
             }

@@ -10,7 +10,7 @@ class SemanticModel internal constructor(
 ) {
     sealed class PathComponent {
         data class StringPathComponent(val value: String) : PathComponent()
-        data class ParameterPathComponent(val parameter: PathParameter<*>) : PathComponent()
+        data class ParameterPathComponent(val parameter: PathParameter) : PathComponent()
     }
 
     abstract class Endpoint
