@@ -11,7 +11,7 @@ import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 @OptIn(ExperimentalStdlibApi::class)
-inline fun <reified T : Any> parameter(
+inline fun <reified T> parameter(
         name: String? = null,
         noinline init: OptionsBuilder<Parameter<T>>.() -> Unit = {}
 ): Parameter<T> {
@@ -19,7 +19,7 @@ inline fun <reified T : Any> parameter(
 }
 
 @PublishedApi
-internal fun <T : Any> parameter(
+internal fun <T> parameter(
         name: String? = null,
         type: KType,
         init: OptionsBuilder<Parameter<T>>.() -> Unit = {}
@@ -27,13 +27,13 @@ internal fun <T : Any> parameter(
     return Parameter(name, type, OptionSet(init))
 }
 
-class Parameter<T : Any> internal constructor(
+class Parameter<T> internal constructor(
         private val name: String?,
         private val type: KType,
         private val options: OptionSet<Parameter<T>>
 ): RequestInjectable {
     private val id = UUID.randomUUID()
-    lateinit var value: T
+    private var value: T? = null
 
     override fun PropertyCollector.collect(property: KProperty<*>) {
         @Suppress("UNCHECKED_CAST")
@@ -45,6 +45,11 @@ class Parameter<T : Any> internal constructor(
     }
 
     operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-        return value
+        if (type.isMarkedNullable) {
+            @Suppress("UNCHECKED_CAST")
+            return value as T
+        }
+
+        return value ?: throw IllegalArgumentException("Argument not initialized")
     }
 }

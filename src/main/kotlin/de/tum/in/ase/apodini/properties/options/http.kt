@@ -6,8 +6,8 @@ sealed class HTTPParameterMode<in T> {
     object Body : HTTPParameterMode<Any>()
 
     object Path : HTTPParameterMode<String>()
-    object Query : HTTPParameterMode<String>()
-    object Header : HTTPParameterMode<String>()
+    object Query : HTTPParameterMode<String?>()
+    object Header : HTTPParameterMode<String?>()
 
     companion object : OptionKey<Parameter<*>, HTTPParameterMode<*>> {
         val body = Body
@@ -17,10 +17,10 @@ sealed class HTTPParameterMode<in T> {
     }
 }
 
-fun <T : Any> OptionsBuilder<Parameter<T>>.http(mode: HTTPParameterMode.Companion.() -> HTTPParameterMode<T>) {
+fun <T> OptionsBuilder<Parameter<T>>.http(mode: HTTPParameterMode.Companion.() -> HTTPParameterMode<T>) {
     http(HTTPParameterMode.mode())
 }
 
-fun <T : Any> OptionsBuilder<Parameter<T>>.http(mode: HTTPParameterMode<T>) {
+fun <T> OptionsBuilder<Parameter<T>>.http(mode: HTTPParameterMode<T>) {
     HTTPParameterMode to mode
 }
