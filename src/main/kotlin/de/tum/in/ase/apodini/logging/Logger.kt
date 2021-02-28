@@ -1,6 +1,6 @@
 package de.tum.`in`.ase.apodini.logging
 
-interface Logger : LogLevels {
+interface Logger {
     enum class LogLevel {
         Fatal, Error, Warning, Info, Debug
     }
@@ -11,7 +11,6 @@ interface Logger : LogLevels {
             message
         }
     }
-
 
     fun fatal(message: () -> String) {
         LogLevel.Fatal(message)
