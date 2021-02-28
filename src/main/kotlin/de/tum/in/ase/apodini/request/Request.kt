@@ -3,6 +3,7 @@ package de.tum.`in`.ase.apodini.request
 import de.tum.`in`.ase.apodini.Handler
 import de.tum.`in`.ase.apodini.compute
 import de.tum.`in`.ase.apodini.environment.EnvironmentKey
+import de.tum.`in`.ase.apodini.environment.EnvironmentStore
 import de.tum.`in`.ase.apodini.internal.RequestInjectable
 import de.tum.`in`.ase.apodini.internal.createInstance
 import de.tum.`in`.ase.apodini.properties.DynamicProperty
@@ -12,9 +13,8 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
-interface Request : CoroutineContext {
+interface Request : CoroutineContext, EnvironmentStore {
     fun <T> parameter(id: UUID): T
-    fun <T> environment(key: EnvironmentKey<T>): T
 }
 
 suspend fun <O : CustomType<O>> Request.handle(
