@@ -1,5 +1,7 @@
 package de.tum.`in`.ase.apodini.environment
 
-object EnvironmentKeys
+interface EnvironmentKeys
 
-abstract class EnvironmentKey<T>
+abstract class EnvironmentKey<T> {
+    abstract val default: T
+}
