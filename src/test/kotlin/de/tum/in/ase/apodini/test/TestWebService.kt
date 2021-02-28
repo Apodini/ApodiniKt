@@ -4,6 +4,8 @@ import de.tum.`in`.ase.apodini.ComponentBuilder
 import de.tum.`in`.ase.apodini.Handler
 import de.tum.`in`.ase.apodini.WebService
 import de.tum.`in`.ase.apodini.configuration.ConfigurationBuilder
+import de.tum.`in`.ase.apodini.environment.EnvironmentKey
+import de.tum.`in`.ase.apodini.environment.EnvironmentKeys
 import de.tum.`in`.ase.apodini.environment.request
 import de.tum.`in`.ase.apodini.exporter.RESTExporter
 import de.tum.`in`.ase.apodini.impl.text
@@ -45,8 +47,16 @@ object TestWebService : WebService {
 
     override fun ConfigurationBuilder.configure() {
         use(RESTExporter())
+
+        environment {
+            secret {
+                42
+            }
+        }
     }
 }
+
+// MARK: Authentication
 
 data class User(val name: String, val age: Int) {
     companion object : BasicAuthenticationUserFactory<User> {
@@ -57,7 +67,6 @@ data class User(val name: String, val age: Int) {
 
             throw IllegalArgumentException("Wrong Username and Password")
         }
-
     }
 }
 
@@ -72,6 +81,8 @@ class CurrentlyAuthenticatedUser : Handler<User?> {
         return authenticated
     }
 }
+
+// MARK: Path Parameters
 
 class GreeterForUser(id: PathParameter) : Handler<String> {
     private val id by id
@@ -99,14 +110,26 @@ class PostsForUser(id: PathParameter) : Handler<String> {
     }
 }
 
+// MARK: Custom Environment Key + query parameters
+
 class Greeter: Handler<String> {
+    private val logger by environment { logger }
+    private val secret by environment { secret }
+
     private val name: String by parameter {
         http {
-            body
+            query
         }
     }
 
     override suspend fun CoroutineContext.compute(): String {
+        logger.debug("Received Secret: $secret")
         return "Hello, $name"
     }
 }
+
+private object SecretKey : EnvironmentKey<Int>() {
+    override val default = 0
+}
+
+val EnvironmentKeys.secret: EnvironmentKey<Int> get() = SecretKey
