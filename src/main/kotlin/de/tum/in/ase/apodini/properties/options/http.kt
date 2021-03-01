@@ -9,7 +9,7 @@ sealed class HTTPParameterMode<in T> {
     object Query : HTTPParameterMode<String?>()
     object Header : HTTPParameterMode<String?>()
 
-    companion object : OptionKey<Parameter<*>, HTTPParameterMode<*>> {
+    companion object {
         val body = Body
         val path = Path
         val query = Query
@@ -17,10 +17,18 @@ sealed class HTTPParameterMode<in T> {
     }
 }
 
+private object HTTPParameterModeKey : OptionKey<Parameter<*>, HTTPParameterMode<*>>
+
+val <T> OptionKeys<Parameter<T>, HTTPParameterMode<T>>.http: OptionKey<Parameter<T>, HTTPParameterMode<T>>
+    get() {
+        @Suppress("UNCHECKED_CAST")
+        return HTTPParameterModeKey as OptionKey<Parameter<T>, HTTPParameterMode<T>>
+    }
+
 fun <T> OptionsBuilder<Parameter<T>>.http(mode: HTTPParameterMode.Companion.() -> HTTPParameterMode<T>) {
     http(HTTPParameterMode.mode())
 }
 
 fun <T> OptionsBuilder<Parameter<T>>.http(mode: HTTPParameterMode<T>) {
-    HTTPParameterMode to mode
+    HTTPParameterModeKey(mode)
 }

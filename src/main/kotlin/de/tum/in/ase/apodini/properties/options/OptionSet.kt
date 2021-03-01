@@ -11,12 +11,20 @@ class OptionSet<P> internal constructor(
             value as T
         }
     }
+
+    operator fun <T> invoke(key: OptionKeys<P, T>.() -> OptionKey<P, T>): T? {
+        @Suppress("UNCHECKED_CAST")
+        val keys = ConcreteOptionKeys as OptionKeys<P, T>
+        return this[keys.key()]
+    }
 }
+
+private object ConcreteOptionKeys : OptionKeys<Any, Any>
 
 private class OptionSetBuilder<P> : OptionsBuilder<P> {
     private val map = mutableMapOf<OptionKey<P, *>, Any>()
 
-    override fun <T> OptionKey<P, T>.to(value: T) {
+    override fun <T> OptionKey<P, T>.invoke(value: T) {
         map[this] = value as Any
     }
 
