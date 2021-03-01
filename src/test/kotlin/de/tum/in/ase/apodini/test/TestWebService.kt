@@ -12,6 +12,7 @@ import de.tum.`in`.ase.apodini.impl.text
 import de.tum.`in`.ase.apodini.impl.group
 import de.tum.`in`.ase.apodini.logging.logger
 import de.tum.`in`.ase.apodini.properties.*
+import de.tum.`in`.ase.apodini.properties.options.default
 import de.tum.`in`.ase.apodini.properties.options.http
 import java.lang.IllegalArgumentException
 import kotlin.coroutines.CoroutineContext
@@ -119,6 +120,9 @@ class Greeter: Handler<String> {
     private val name: String by parameter {
         http {
             query
+        }
+        default {
+            "World"
         }
     }
 
