@@ -6,5 +6,5 @@ import java.util.*
 import kotlin.reflect.KType
 
 interface PropertyCollector {
-    fun registerParameter(id: UUID, name: String, type: KType, options: OptionSet<Parameter<*>>)
+    fun <T> registerParameter(id: UUID, name: String, type: KType, options: OptionSet<Parameter<T>>)
 }

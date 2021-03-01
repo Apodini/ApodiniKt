@@ -37,7 +37,7 @@ class Parameter<T> internal constructor(
 
     override fun PropertyCollector.collect(property: KProperty<*>) {
         @Suppress("UNCHECKED_CAST")
-        registerParameter(id, name ?: property.name, type, options as OptionSet<Parameter<*>>)
+        registerParameter(id, name ?: property.name, type, options)
     }
 
     override fun inject(request: Request) {
