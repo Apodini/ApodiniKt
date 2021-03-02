@@ -62,15 +62,31 @@ object TestWebService : WebService {
 
 // MARK: Authentication
 
+enum class UserRole {
+    Individual, Moderator, Admin
+}
+
 data class URL(val urlString: String) : CustomType<URL> {
     override fun definition(): TypeDefinition<URL> = Scalar.string("URL") { it.urlString }
 }
 
-data class User(val name: String, val age: Int, val url: URL) {
+data class User(
+    val name: String,
+    val age: Int,
+    val homepage: URL,
+    val role: UserRole,
+    val aliases: List<String>
+) {
     companion object : BasicAuthenticationUserFactory<User> {
         override suspend fun user(username: String, password: String): User {
             if (username == "test@example.org" && password == "password") {
-                return User("Mathias", 25, URL("https://quintero.io"))
+                return User(
+                    "Mathias",
+                    25,
+                    URL("https://quintero.io"),
+                    UserRole.Admin,
+                    listOf("Quincy")
+                )
             }
 
             throw IllegalArgumentException("Wrong Username and Password")

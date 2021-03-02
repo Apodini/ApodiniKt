@@ -1,12 +1,13 @@
 package de.tum.`in`.ase.apodini.types
 
 import de.tum.`in`.ase.apodini.internal.createInstance
+import sun.reflect.generics.reflectiveObjects.TypeVariableImpl
+import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
+import java.lang.reflect.TypeVariable
 import java.util.*
-import kotlin.reflect.KCallable
-import kotlin.reflect.KClass
-import kotlin.reflect.KType
+import kotlin.reflect.*
 import kotlin.reflect.full.declaredMemberProperties
-import kotlin.reflect.typeOf
 
 internal object TypeDefinitionInferenceManager {
     @OptIn(ExperimentalStdlibApi::class)
@@ -31,19 +32,19 @@ internal object TypeDefinitionInferenceManager {
 
         // Handle Nullable
         if (type.isMarkedNullable) {
-            val typeDefinition = inferImpl<T>(kClass)
+            val typeDefinition = inferImpl<T>(kClass, type.arguments)
             @Suppress("UNCHECKED_CAST")
             return Nullable(typeDefinition) as TypeDefinition<T>
         }
 
-        return inferImpl(kClass)
+        return inferImpl(kClass, type.arguments)
     }
 
-    private fun <T> inferImpl(kClass: KClass<*>): TypeDefinition<T> {
+    private fun <T> inferImpl(kClass: KClass<*>, types: List<KTypeProjection>): TypeDefinition<T> {
         val javaClass = kClass.java
 
         // Handle CustomType
-        if (javaClass.interfaces.contains(CustomType::class.java)) {
+        if (javaClass.implements(CustomType::class.java)) {
             val value = createInstance(kClass) as CustomType<*>
 
             @Suppress("UNCHECKED_CAST")
@@ -51,8 +52,12 @@ internal object TypeDefinitionInferenceManager {
         }
 
         // Handle Iterable
-        if (javaClass.interfaces.contains(Iterable::class.java)) {
-            TODO()
+        val iterableElement = javaClass.iterableElement(types.map { it.type })
+        if (iterableElement != null) {
+            val definition = infer<T>(iterableElement)
+
+            @Suppress("UNCHECKED_CAST")
+            return Array(definition) as TypeDefinition<T>
         }
 
         // Handle Enums
@@ -89,6 +94,58 @@ internal object TypeDefinitionInferenceManager {
         val nonNullable = infer<T>(nonNullableType)
         return Nullable(nonNullable)
     }
+}
+
+@OptIn(ExperimentalStdlibApi::class)
+private fun Class<*>.iterableElement(arguments: List<KType?>): KType? {
+    if (this == Iterable::class.java) {
+        return arguments.first()
+    }
+
+    val parameters = mapOf(*typeParameters.map { it.name }.zip(arguments).toTypedArray())
+    val relevant = listOfNotNull(genericSuperclass) + genericInterfaces
+
+    relevant
+        .mapNotNull { it as? ParameterizedType }
+        .forEach { type ->
+            val newArguments = type.actualTypeArguments.map { argument ->
+                when (argument) {
+                    is TypeVariable<*> -> parameters[argument.name]
+                    else -> DummyKType(argument)
+                }
+            }
+            val nextClass = Class.forName(type.rawType.typeName)
+            nextClass.iterableElement(newArguments)?.let { return it }
+        }
+
+    return null
+}
+
+data class DummyKType(val type: Type) : KType {
+    override val annotations: List<Annotation>
+        get() = emptyList()
+
+    override val arguments: List<KTypeProjection>
+        get() = emptyList()
+
+    override val classifier: KClassifier?
+        get() {
+            val javaClass = Class.forName(type.typeName)
+            return javaClass.kotlin
+        }
+
+    override val isMarkedNullable: Boolean
+        get() = false
+
+}
+
+private fun Class<*>.implements(interfaceClass: Class<*>): Boolean {
+    if (interfaces.contains(interfaceClass)) {
+        return true
+    }
+
+    val relevant = listOfNotNull(superclass) + interfaces
+    return relevant.any { it.implements(interfaceClass) }
 }
 
 private fun <Source, T> KCallable<T>.property(inferenceManager: TypeDefinitionInferenceManager): Object.Property<Source> {
