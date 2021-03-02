@@ -15,7 +15,7 @@ fun pathParameter(
 }
 
 data class PathParameter internal constructor(
-        private val parameter: Parameter<String>
+        internal val parameter: Parameter<String>
 ): DynamicProperty {
     operator fun getValue(thisRef: Any?, property: KProperty<*>): String {
         return parameter.getValue(thisRef, property)
