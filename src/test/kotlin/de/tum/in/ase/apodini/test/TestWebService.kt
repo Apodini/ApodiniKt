@@ -21,25 +21,25 @@ object TestWebService : WebService {
     private val userId = pathParameter()
 
     override fun ComponentBuilder.invoke() {
-        text("Hello World")
-        group("kotlin") {
-            text("Hello, Kotlin")
-            group("1.4") {
-                text("Hello, Kotlin 1.4")
-            }
-        }
-
-        group("me") {
-            +CurrentlyAuthenticatedUser()
-        }
-
-        group("user", userId) {
-            +GreeterForUser(userId)
-
-            group("post") {
-                +PostsForUser(userId)
-            }
-        }
+//        text("Hello World")
+//        group("kotlin") {
+//            text("Hello, Kotlin")
+//            group("1.4") {
+//                text("Hello, Kotlin 1.4")
+//            }
+//        }
+//
+//        group("me") {
+//            +CurrentlyAuthenticatedUser()
+//        }
+//
+//        group("user", userId) {
+//            +GreeterForUser(userId)
+//
+//            group("post") {
+//                +PostsForUser(userId)
+//            }
+//        }
 
         group("greeting") {
             +Greeter()

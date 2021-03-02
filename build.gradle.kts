@@ -10,6 +10,7 @@ repositories {
     mavenCentral()
 }
 dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.4.0")
     testImplementation(kotlin("test-junit"))
 }
 tasks.withType<KotlinCompile>() {
