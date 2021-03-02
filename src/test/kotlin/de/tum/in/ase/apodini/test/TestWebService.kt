@@ -14,6 +14,9 @@ import de.tum.`in`.ase.apodini.logging.logger
 import de.tum.`in`.ase.apodini.properties.*
 import de.tum.`in`.ase.apodini.properties.options.default
 import de.tum.`in`.ase.apodini.properties.options.http
+import de.tum.`in`.ase.apodini.types.CustomType
+import de.tum.`in`.ase.apodini.types.Scalar
+import de.tum.`in`.ase.apodini.types.TypeDefinition
 import java.lang.IllegalArgumentException
 import kotlin.coroutines.CoroutineContext
 
@@ -21,25 +24,25 @@ object TestWebService : WebService {
     private val userId = pathParameter()
 
     override fun ComponentBuilder.invoke() {
-//        text("Hello World")
-//        group("kotlin") {
-//            text("Hello, Kotlin")
-//            group("1.4") {
-//                text("Hello, Kotlin 1.4")
-//            }
-//        }
-//
-//        group("me") {
-//            +CurrentlyAuthenticatedUser()
-//        }
-//
-//        group("user", userId) {
-//            +GreeterForUser(userId)
-//
-//            group("post") {
-//                +PostsForUser(userId)
-//            }
-//        }
+        text("Hello World")
+        group("kotlin") {
+            text("Hello, Kotlin")
+            group("1.4") {
+                text("Hello, Kotlin 1.4")
+            }
+        }
+
+        group("me") {
+            +CurrentlyAuthenticatedUser()
+        }
+
+        group("user", userId) {
+            +GreeterForUser(userId)
+
+            group("post") {
+                +PostsForUser(userId)
+            }
+        }
 
         group("greeting") {
             +Greeter()
@@ -59,11 +62,15 @@ object TestWebService : WebService {
 
 // MARK: Authentication
 
-data class User(val name: String, val age: Int) {
+data class URL(val urlString: String) : CustomType<URL> {
+    override fun definition(): TypeDefinition<URL> = Scalar.string("URL") { it.urlString }
+}
+
+data class User(val name: String, val age: Int, val url: URL) {
     companion object : BasicAuthenticationUserFactory<User> {
         override suspend fun user(username: String, password: String): User {
             if (username == "test@example.org" && password == "password") {
-                return User("Mathias", 25)
+                return User("Mathias", 25, URL("https://quintero.io"))
             }
 
             throw IllegalArgumentException("Wrong Username and Password")
