@@ -7,7 +7,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
-internal class TypeDefinitionInferenceManager {
+internal object TypeDefinitionInferenceManager {
     @OptIn(ExperimentalStdlibApi::class)
     private val types = mutableMapOf<KType, TypeDefinition<*>>(
             typeOf<String>() to StringType,
