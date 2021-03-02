@@ -17,9 +17,9 @@ interface Request : CoroutineContext, EnvironmentStore {
     fun <T> parameter(id: UUID): T
 }
 
-suspend fun <O : CustomType<O>> Request.handle(
-        handler: Handler<O>
-): O {
+suspend fun <T> Request.handle(
+        handler: Handler<T>
+): T {
     val newInstance = handler.shallowCopy()
     newInstance.modify<RequestInjectable> { injectable ->
         injectable.shallowCopy().apply { inject(this@handle) }
@@ -27,7 +27,7 @@ suspend fun <O : CustomType<O>> Request.handle(
     newInstance.traverse<DynamicProperty> { property ->
         property.update()
     }
-    return newInstance.compute(this)
+    return with(newInstance) { compute() }
 }
 
 @OptIn(ExperimentalStdlibApi::class)
