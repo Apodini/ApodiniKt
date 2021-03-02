@@ -35,9 +35,9 @@ class Parameter<T> internal constructor(
     private val id = UUID.randomUUID()
     private var value: T? = null
 
-    override fun PropertyCollector.collect(property: KProperty<*>) {
+    override fun PropertyCollector.collect(propertyName: String) {
         @Suppress("UNCHECKED_CAST")
-        registerParameter(id, name ?: property.name, type, options)
+        registerParameter(id, name ?: propertyName, type, options)
     }
 
     override fun inject(request: Request) {
