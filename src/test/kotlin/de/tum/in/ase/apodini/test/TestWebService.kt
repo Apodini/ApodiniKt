@@ -121,9 +121,7 @@ class Greeter: Handler<String> {
         http {
             query
         }
-        default {
-            "World"
-        }
+        default("World")
     }
 
     override suspend fun CoroutineContext.compute(): String {
