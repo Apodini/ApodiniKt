@@ -19,7 +19,7 @@ interface EnvironmentStore : EnvironmentKeys {
 }
 
 private class StandardEnvironmentStore(
-        private val store: Map<EnvironmentKey<*>, Any?>
+    private val store: Map<EnvironmentKey<*>, Any?>
 ) : EnvironmentStore {
     override fun contains(key: EnvironmentKey<*>): Boolean {
         return store.containsKey(key)

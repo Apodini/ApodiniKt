@@ -4,7 +4,7 @@ import de.tum.`in`.ase.apodini.properties.options.http
 import kotlin.reflect.KProperty
 
 fun pathParameter(
-        name: String? = null
+    name: String? = null
 ): PathParameter {
     val parameter = parameter<String>(name) {
         http {
@@ -15,7 +15,7 @@ fun pathParameter(
 }
 
 data class PathParameter internal constructor(
-        internal val parameter: Parameter<String>
+    internal val parameter: Parameter<String>
 ): DynamicProperty {
     operator fun getValue(thisRef: Any?, property: KProperty<*>): String {
         return parameter.getValue(thisRef, property)

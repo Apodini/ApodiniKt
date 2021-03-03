@@ -13,7 +13,7 @@ fun <T> environment(key: EnvironmentKeys.() -> EnvironmentKey<T>): Environment<T
 }
 
 data class Environment<T> internal constructor(
-        private val key: EnvironmentKey<T>
+    private val key: EnvironmentKey<T>
 ): RequestInjectable {
     private var value: T? = null
 

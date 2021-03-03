@@ -79,9 +79,9 @@ private class ComponentBuilderCursor : ComponentVisitor() {
 }
 
 private class StandardComponentBuilder(
-        val cursor: ComponentBuilderCursor,
-        val path: List<SemanticModel.PathComponent>,
-        val parent: StandardComponentBuilder? = null
+    val cursor: ComponentBuilderCursor,
+    val path: List<SemanticModel.PathComponent>,
+    val parent: StandardComponentBuilder? = null
 ) : ComponentBuilder() {
     public override fun add(component: Component) {
         if (component is InternalComponent) {

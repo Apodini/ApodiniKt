@@ -1,13 +1,10 @@
 package de.tum.`in`.ase.apodini.request
 
 import de.tum.`in`.ase.apodini.Handler
-import de.tum.`in`.ase.apodini.compute
-import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.environment.EnvironmentStore
 import de.tum.`in`.ase.apodini.internal.RequestInjectable
 import de.tum.`in`.ase.apodini.internal.createInstance
 import de.tum.`in`.ase.apodini.properties.DynamicProperty
-import de.tum.`in`.ase.apodini.types.CustomType
 import java.util.*
 import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KType
@@ -18,7 +15,7 @@ interface Request : CoroutineContext, EnvironmentStore {
 }
 
 suspend fun <T> Request.handle(
-        handler: Handler<T>
+    handler: Handler<T>
 ): T {
     val newInstance = handler.shallowCopy()
     newInstance.modify<RequestInjectable> { injectable ->
@@ -87,7 +84,11 @@ private fun <T> T.shallowCopy(): T {
     if (this == null)
         return this
 
-    val type = this!!::class
+    return nonNullShallowCopy()
+}
+
+private fun <T : Any> T.nonNullShallowCopy(): T {
+    val type = this::class
 
     if (type.isData) {
         val copy = type.members.first { it.name == "copy" }

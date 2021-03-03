@@ -17,8 +17,8 @@ fun EnvironmentStore.extend(init: EnvironmentBuilder.() -> Unit): EnvironmentSto
 }
 
 private class ChainedEnvironmentStore(
-        val default: EnvironmentStore,
-        val fallback: EnvironmentStore
+    val default: EnvironmentStore,
+    val fallback: EnvironmentStore
 ): EnvironmentStore {
 
     override fun contains(key: EnvironmentKey<*>): Boolean {

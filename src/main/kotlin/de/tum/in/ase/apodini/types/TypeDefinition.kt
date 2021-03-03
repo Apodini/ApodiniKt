@@ -1,7 +1,7 @@
 package de.tum.`in`.ase.apodini.types
 
 sealed class TypeDefinition<T>(
-        val documentation: String?
+    val documentation: String?
 ) {
     abstract fun Encoder.encode(value: T)
 }
@@ -33,10 +33,10 @@ internal object DoubleType : ScalarType<Double>("Double") {
 }
 
 class Scalar<T, Encoded> private constructor(
-        name: String? = null,
-        private val kind: ScalarType<Encoded>,
-        documentation: String? = null,
-        private val extract: T.() -> Encoded
+    name: String? = null,
+    private val kind: ScalarType<Encoded>,
+    documentation: String? = null,
+    private val extract: T.() -> Encoded
 ) : TypeDefinition<T>(documentation) {
     private val name = name ?: kind
 
@@ -49,37 +49,37 @@ class Scalar<T, Encoded> private constructor(
 
     companion object {
         fun <T> string(
-                name: String? = null,
-                documentation: String? = null,
-                extract: (T) -> String
+            name: String? = null,
+            documentation: String? = null,
+            extract: (T) -> String
         ): Scalar<T, String> = Scalar(name, StringType, documentation, extract)
 
         fun <T> int(
-                name: String? = null,
-                documentation: String? = null,
-                extract: (T) -> Int
+            name: String? = null,
+            documentation: String? = null,
+            extract: (T) -> Int
         ): Scalar<T, Int> = Scalar(name, IntType, documentation, extract)
 
         fun <T> boolean(
-                name: String? = null,
-                documentation: String? = null,
-                extract: (T) -> Boolean
+            name: String? = null,
+            documentation: String? = null,
+            extract: (T) -> Boolean
         ): Scalar<T, Boolean> = Scalar(name, BooleanType, documentation, extract)
 
         fun <T> double(
-                name: String? = null,
-                documentation: String? = null,
-                extract: (T) -> Double
+            name: String? = null,
+            documentation: String? = null,
+            extract: (T) -> Double
         ): Scalar<T, Double> = Scalar(name, DoubleType, documentation, extract)
     }
 }
 
 class Enum<T> constructor(
-        val name: String,
-        val cases: Iterable<String>,
-        val caseNameFactory: (T) -> String,
-        val caseFactory: (String) -> T,
-        documentation: String? = null
+    val name: String,
+    val cases: Iterable<String>,
+    val caseNameFactory: (T) -> String,
+    val caseFactory: (String) -> T,
+    documentation: String? = null
 ) : TypeDefinition<T>(documentation) {
     override fun Encoder.encode(value: T) {
         encodeString(caseNameFactory(value))
@@ -87,22 +87,22 @@ class Enum<T> constructor(
 }
 
 class Object<T> constructor(
-        val name: String,
-        val properties: Iterable<Property<T>>,
-        documentation: String? = null
+    val name: String,
+    val properties: Iterable<Property<T>>,
+    documentation: String? = null
 ) : TypeDefinition<T>(documentation) {
     abstract class Property<Source>(
-            val name: String,
-            val documentation: String? = null
+        val name: String,
+        val documentation: String? = null
     ) {
         abstract fun Encoder.KeyedContainer.encode(source: Source)
     }
 
     class ConcreteProperty<Source, T>(
-            name: String,
-            documentation: String? = null,
-            private val definition: TypeDefinition<T>,
-            private val getter: Source.() -> T
+        name: String,
+        documentation: String? = null,
+        private val definition: TypeDefinition<T>,
+        private val getter: Source.() -> T
     ) : Property<Source>(name, documentation) {
         override fun Encoder.KeyedContainer.encode(source: Source) {
             encode(name) {

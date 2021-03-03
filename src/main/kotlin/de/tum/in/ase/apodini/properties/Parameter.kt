@@ -12,25 +12,25 @@ import kotlin.reflect.typeOf
 
 @OptIn(ExperimentalStdlibApi::class)
 inline fun <reified T> parameter(
-        name: String? = null,
-        noinline init: OptionsBuilder<Parameter<T>>.() -> Unit = {}
+    name: String? = null,
+    noinline init: OptionsBuilder<Parameter<T>>.() -> Unit = {}
 ): Parameter<T> {
     return parameter(name, typeOf<T>(), init)
 }
 
 @PublishedApi
 internal fun <T> parameter(
-        name: String? = null,
-        type: KType,
-        init: OptionsBuilder<Parameter<T>>.() -> Unit = {}
+    name: String? = null,
+    type: KType,
+    init: OptionsBuilder<Parameter<T>>.() -> Unit = {}
 ): Parameter<T> {
     return Parameter(name, type, OptionSet(init))
 }
 
 class Parameter<T> internal constructor(
-        private val name: String?,
-        private val type: KType,
-        private val options: OptionSet<Parameter<T>>
+    private val name: String?,
+    private val type: KType,
+    private val options: OptionSet<Parameter<T>>
 ): RequestInjectable {
     private val id = UUID.randomUUID()
     private var value: T? = null

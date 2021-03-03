@@ -14,19 +14,19 @@ interface BasicAuthenticationUserFactory<T> {
 }
 
 fun <T : Any> authenticated(
-        factory: BearerAccessTokenUserFactory<T>
+    factory: BearerAccessTokenUserFactory<T>
 ): Authenticated<T> {
     return Authenticated(Authenticated.Factory.Bearer(factory))
 }
 
 fun <T : Any> authenticated(
-        factory: BasicAuthenticationUserFactory<T>
+    factory: BasicAuthenticationUserFactory<T>
 ): Authenticated<T> {
     return Authenticated(Authenticated.Factory.Basic(factory))
 }
 
 class Authenticated<T : Any> internal constructor(
-        private val factory: Factory<T>,
+    private val factory: Factory<T>,
 ): DynamicProperty {
     internal sealed class Factory<T> {
         data class Bearer<T>(val value: BearerAccessTokenUserFactory<T>) : Factory<T>()
