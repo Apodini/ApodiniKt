@@ -13,15 +13,13 @@ import de.tum.`in`.ase.apodini.internal.ComponentVisitor
 import de.tum.`in`.ase.apodini.internal.InternalComponent
 import de.tum.`in`.ase.apodini.internal.PropertyCollector
 import de.tum.`in`.ase.apodini.internal.RequestInjectable
-import de.tum.`in`.ase.apodini.properties.DynamicProperty
+import de.tum.`in`.ase.apodini.internal.reflection.traverse
 import de.tum.`in`.ase.apodini.properties.Parameter
 import de.tum.`in`.ase.apodini.properties.options.OptionSet
 import de.tum.`in`.ase.apodini.properties.options.default
-import de.tum.`in`.ase.apodini.types.TypeDefinitionInferenceManager
+import de.tum.`in`.ase.apodini.internal.reflection.TypeDefinitionInferenceManager
 import java.util.*
-import kotlin.reflect.KClass
 import kotlin.reflect.KType
-import kotlin.reflect.typeOf
 
 internal fun WebService.semanticModel(): SemanticModel {
     val configurationBuilder = StandardConfigurationBuilder()
@@ -52,6 +50,7 @@ private class StandardConfigurationBuilder : ConfigurationBuilder {
 }
 
 private class ComponentBuilderCursor : ComponentVisitor() {
+    val inferenceManager = TypeDefinitionInferenceManager()
     val endpoints = mutableListOf<SemanticModel.Endpoint>()
     private var current: StandardComponentBuilder = StandardComponentBuilder(this, emptyList())
 
@@ -109,7 +108,7 @@ private class StandardComponentBuilder(
 
         val endpoint = SemanticModel.ConcreteEndpoint(
             path = path,
-            typeDefinition = TypeDefinitionInferenceManager.infer(returnType),
+            typeDefinition = cursor.inferenceManager.infer(returnType),
             handler = handler,
             environment = EnvironmentStore.empty,
             parameters = parameters
@@ -129,28 +128,5 @@ private class ParameterCollector : PropertyCollector {
 
     fun build(): List<SemanticModel.Parameter<*>> {
         return parameters
-    }
-}
-
-@OptIn(ExperimentalStdlibApi::class)
-private inline fun <reified T> Any.traverse(noinline block: (String, T) -> Unit) {
-    traverse(typeOf<T>(), block)
-}
-
-private fun <T> Any.traverse(lookedUpType: KType, block: (String, T) -> Unit) {
-    val type = this::class.java
-    val concreteLookedUpType = lookedUpType.classifier as KClass<*>
-
-    for (field in type.declaredFields) {
-        val wasAccessible = field.isAccessible
-        field.isAccessible = true
-        val value = field.get(this)
-        if (concreteLookedUpType.isInstance(value)) {
-            @Suppress("UNCHECKED_CAST")
-            block(field.name.removeSuffix("\$delegate"), value as T)
-        } else if (value is DynamicProperty) {
-            value.traverse(lookedUpType, block)
-        }
-        field.isAccessible = wasAccessible
     }
 }

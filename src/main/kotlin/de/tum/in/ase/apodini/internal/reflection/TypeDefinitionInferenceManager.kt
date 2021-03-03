@@ -1,7 +1,7 @@
-package de.tum.`in`.ase.apodini.types
+package de.tum.`in`.ase.apodini.internal.reflection
 
 import de.tum.`in`.ase.apodini.internal.createInstance
-import sun.reflect.generics.reflectiveObjects.TypeVariableImpl
+import de.tum.`in`.ase.apodini.types.*
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.lang.reflect.TypeVariable
@@ -9,7 +9,7 @@ import java.util.*
 import kotlin.reflect.*
 import kotlin.reflect.full.declaredMemberProperties
 
-internal object TypeDefinitionInferenceManager {
+internal class TypeDefinitionInferenceManager {
     @OptIn(ExperimentalStdlibApi::class)
     private val types = mutableMapOf<KType, TypeDefinition<*>>(
         typeOf<String>() to StringType,
