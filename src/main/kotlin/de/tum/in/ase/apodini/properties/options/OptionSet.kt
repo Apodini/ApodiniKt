@@ -1,6 +1,6 @@
 package de.tum.`in`.ase.apodini.properties.options
 
-class OptionSet<P> internal constructor(
+class OptionSet<P> private constructor(
     private val map: Map<OptionKey<P, *>, Any>
 ) {
     constructor(init: OptionsBuilder<P>.() -> Unit) : this(OptionSetBuilder<P>().also(init).build())
