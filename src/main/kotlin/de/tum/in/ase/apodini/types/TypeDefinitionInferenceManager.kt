@@ -40,7 +40,7 @@ internal object TypeDefinitionInferenceManager {
         return inferImpl(kClass, type.arguments)
     }
 
-    private fun <T> inferImpl(kClass: KClass<*>, types: List<KTypeProjection>): TypeDefinition<T> {
+    private fun <T> inferImpl(kClass: KClass<*>, arguments: List<KTypeProjection>): TypeDefinition<T> {
         val javaClass = kClass.java
 
         // Handle CustomType
@@ -52,7 +52,7 @@ internal object TypeDefinitionInferenceManager {
         }
 
         // Handle Iterable
-        val iterableElement = javaClass.iterableElement(types.map { it.type })
+        val iterableElement = javaClass.iterableElement(arguments.map { it.type })
         if (iterableElement != null) {
             val definition = infer<T>(iterableElement)
 
@@ -88,11 +88,6 @@ internal object TypeDefinitionInferenceManager {
                 it.property(inferenceManager = this)
             }
         )
-    }
-
-    private fun <T> makeNullable(nonNullableType: KType): TypeDefinition<T?> {
-        val nonNullable = infer<T>(nonNullableType)
-        return Nullable(nonNullable)
     }
 }
 
