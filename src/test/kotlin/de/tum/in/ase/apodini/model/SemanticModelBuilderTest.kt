@@ -17,7 +17,7 @@ internal class SemanticModelBuilderTest : TestCase() {
         }
         assertEquals(semanticModel.endpoints.count(), 1)
 
-        val endpoint = semanticModel.endpoints.first() as SemanticModel.ConcreteEndpoint<*>
+        val endpoint = semanticModel.endpoints.first()
         assertEquals(endpoint.path.count(), 0)
         assertEquals(endpoint.parameters.count(), 0)
         assertEquals(endpoint.typeDefinition, StringType)
@@ -33,7 +33,7 @@ internal class SemanticModelBuilderTest : TestCase() {
         }
         assertEquals(semanticModel.endpoints.count(), 1)
 
-        val endpoint = semanticModel.endpoints.first() as SemanticModel.ConcreteEndpoint<*>
+        val endpoint = semanticModel.endpoints.first()
         assertEquals(endpoint.path.count(), 0)
         assertEquals(endpoint.parameters.count(), 0)
         assertEquals(endpoint.typeDefinition, Nullable(StringType))

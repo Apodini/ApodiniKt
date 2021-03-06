@@ -25,14 +25,13 @@ internal fun WebService.semanticModel(): SemanticModel {
     val configurationBuilder = StandardConfigurationBuilder()
     configurationBuilder.configure()
 
-    val componentBuilder = ComponentBuilderCursor()
-    componentBuilder()
-
     return SemanticModel(
         configurationBuilder.exporters,
-        componentBuilder.endpoints,
         configurationBuilder.environmentStore
-    )
+    ).also { semanticModel ->
+        val componentBuilder = ComponentBuilderCursor(semanticModel)
+        componentBuilder()
+    }
 }
 
 private class StandardConfigurationBuilder : ConfigurationBuilder {
@@ -49,9 +48,8 @@ private class StandardConfigurationBuilder : ConfigurationBuilder {
     }
 }
 
-private class ComponentBuilderCursor : ComponentVisitor() {
+private class ComponentBuilderCursor(val semanticModel: SemanticModel) : ComponentVisitor() {
     val inferenceManager = TypeDefinitionInferenceManager()
-    val endpoints = mutableListOf<SemanticModel.Endpoint>()
     private var current: StandardComponentBuilder = StandardComponentBuilder(this, emptyList())
 
     override fun enterGroup(kind: Group) {
@@ -106,7 +104,8 @@ private class StandardComponentBuilder(
             }
             .build()
 
-        val endpoint = SemanticModel.ConcreteEndpoint(
+        val endpoint = SemanticModel.Endpoint(
+            semanticModel = cursor.semanticModel,
             path = path,
             typeDefinition = cursor.inferenceManager.infer(returnType),
             handler = handler,
@@ -114,7 +113,7 @@ private class StandardComponentBuilder(
             parameters = parameters
         )
 
-        cursor.endpoints.add(endpoint)
+        cursor.semanticModel.internalEndpoints.add(endpoint)
     }
 }
 
