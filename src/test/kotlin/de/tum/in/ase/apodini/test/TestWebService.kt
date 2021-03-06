@@ -14,9 +14,7 @@ import de.tum.`in`.ase.apodini.logging.logger
 import de.tum.`in`.ase.apodini.properties.*
 import de.tum.`in`.ase.apodini.properties.options.default
 import de.tum.`in`.ase.apodini.properties.options.http
-import de.tum.`in`.ase.apodini.types.CustomType
-import de.tum.`in`.ase.apodini.types.Scalar
-import de.tum.`in`.ase.apodini.types.TypeDefinition
+import de.tum.`in`.ase.apodini.types.*
 import java.lang.IllegalArgumentException
 import kotlin.coroutines.CoroutineContext
 
@@ -67,16 +65,29 @@ enum class UserRole {
 }
 
 data class URL(val urlString: String) : CustomType<URL> {
-    override fun definition(): TypeDefinition<URL> = Scalar.string("URL") { it.urlString }
+    override fun TypeDefinitionBuilder.definition() = string<URL> { urlString }
 }
 
+@Documented("Represents a user")
 data class User(
     val name: String,
     val age: Int,
     val homepage: URL,
     val role: UserRole,
     val aliases: List<String>
-) {
+) : CustomType<User> {
+
+    @Hidden
+    val privateAttribute: Int = 42
+
+    override fun TypeDefinitionBuilder.definition(): TypeDefinition<User> = `object` {
+        inferFromStructure()
+
+        property("upperCaseName") {
+            name.toUpperCase()
+        }
+    }
+
     companion object : BasicAuthenticationUserFactory<User> {
         override suspend fun user(username: String, password: String): User {
             if (username == "test@example.org" && password == "password") {

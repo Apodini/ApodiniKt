@@ -70,13 +70,17 @@ internal class TypeDefinitionInferenceManager {
         }
 
         val javaClass = kClass.java
+        val name = kClass.annotations.annotation<Renamed>()?.name ?: kClass.simpleName!!
+        val documentation = kClass.annotations.annotation<Documented>()?.documentation
 
         // Handle CustomType
         if (javaClass.implements(CustomType::class.java)) {
             val value = createInstance(kClass) as CustomType<*>
-
-            @Suppress("UNCHECKED_CAST")
-            return value.definition() as TypeDefinition<T>
+            val builder = StandardTypeDefinitionBuilder(name, documentation, kClass, this)
+            return with(value) {
+                @Suppress("UNCHECKED_CAST")
+                builder.definition() as TypeDefinition<T>
+            }
         }
 
         // Handle Iterable
@@ -101,7 +105,7 @@ internal class TypeDefinitionInferenceManager {
             val caseToCaseName = cases.zip(caseNames).toMap()
 
             return Enum(
-                kClass.simpleName!!,
+                name,
                 cases = caseNames,
                 caseNameFactory = { caseToCaseName.getValue(it) },
                 caseFactory = { caseNameToCase.getValue(it) }
@@ -109,13 +113,12 @@ internal class TypeDefinitionInferenceManager {
         }
 
         // Handle Objects
-        val fields = kClass.declaredMemberProperties
-        return Object(
-            kClass.simpleName!!,
-            properties = fields.mapNotNull {
-                it.property(inferenceManager = this)
-            }
-        )
+        return StandardTypeDefinitionBuilder(
+            name,
+            documentation,
+            kClass,
+            this
+        ).`object` { inferFromStructure() }
     }
 }
 
@@ -156,7 +159,7 @@ data class DummyKType(val type: Type) : KType {
     override val arguments: List<KTypeProjection>
         get() = emptyList()
 
-    override val classifier: KClassifier?
+    override val classifier: KClassifier
         get() {
             val javaClass = Class.forName(type.typeName)
             return javaClass.kotlin
@@ -164,6 +167,75 @@ data class DummyKType(val type: Type) : KType {
 
     override val isMarkedNullable: Boolean
         get() = false
+}
+
+private class StandardTypeDefinitionBuilder(
+    val defaultName: String,
+    val defaultDocumentation: String?,
+    val kClass: KClass<*>,
+    val inferenceManager: TypeDefinitionInferenceManager
+) : TypeDefinitionBuilder {
+    override fun <T> `object`(
+        name: String?,
+        documentation: String?,
+        init: ObjectDefinitionBuilder<T>.() -> Unit
+    ) = StandardObjectBuilder<T>(
+        name ?: defaultName,
+        documentation ?: defaultDocumentation,
+        kClass,
+        inferenceManager
+    ).apply(init).build()
+
+    override fun <T> string(
+        name: String?,
+        documentation: String?,
+        extract: T.() -> String
+    ) = Scalar(name ?: defaultName, StringType, documentation ?: defaultDocumentation, extract)
+
+    override fun <T> int(
+        name: String?,
+        documentation: String?,
+        extract: T.() -> Int
+    ) = Scalar(name ?: defaultName, IntType, documentation ?: defaultDocumentation, extract)
+
+    override fun <T> boolean(
+        name: String?,
+        documentation: String?,
+        extract: T.() -> Boolean
+    ) = Scalar(name ?: defaultName, BooleanType, documentation ?: defaultDocumentation, extract)
+
+    override fun <T> double(
+        name: String?,
+        documentation: String?,
+        extract: T.() -> Double
+    ) = Scalar(name ?: defaultName, DoubleType, documentation ?: defaultDocumentation, extract)
+}
+
+private class StandardObjectBuilder<T>(
+    val name: String,
+    val documentation: String?,
+    val kClass: KClass<*>,
+    val inferenceManager: TypeDefinitionInferenceManager
+) : ObjectDefinitionBuilder<T>() {
+    private val properties = mutableListOf<Object.Property<T>>()
+
+    override fun inferFromStructure() {
+        val fields = kClass.declaredMemberProperties
+
+        properties.addAll(
+            fields.mapNotNull {
+                it.property(inferenceManager)
+            }
+        )
+    }
+
+    override fun <V> property(name: String, type: KType, documentation: String?, getter: T.() -> V) {
+        properties.add(Object.ConcreteProperty(name, documentation, inferenceManager.infer<V>(type), getter))
+    }
+
+    fun build(): Object<T> {
+        return Object(name, properties, documentation)
+    }
 }
 
 private fun Class<*>.implements(interfaceClass: Class<*>): Boolean {
@@ -181,8 +253,10 @@ private fun <Source, T> KCallable<T>.property(inferenceManager: TypeDefinitionIn
     }
 
     val name = annotations.annotation<Renamed>()?.name ?: name
+    val documentation = annotations.annotation<Documented>()?.documentation
     return Object.ConcreteProperty(
         name = name,
+        documentation = documentation,
         definition = inferenceManager.infer(returnType),
         getter = { this@property.call(this) }
     )

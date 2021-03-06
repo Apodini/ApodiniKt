@@ -32,7 +32,7 @@ internal object DoubleType : ScalarType<Double>("Double") {
     }
 }
 
-class Scalar<T, Encoded> private constructor(
+class Scalar<T, Encoded> internal constructor(
     name: String? = null,
     private val kind: ScalarType<Encoded>,
     documentation: String? = null,
@@ -45,6 +45,10 @@ class Scalar<T, Encoded> private constructor(
         with(kind) {
             encode(encoded)
         }
+    }
+
+    fun erased(): Scalar<T, Encoded> {
+        return Scalar(null, kind, documentation, extract)
     }
 
     companion object {
@@ -74,11 +78,11 @@ class Scalar<T, Encoded> private constructor(
     }
 }
 
-class Enum<T> constructor(
+class Enum<T> internal constructor(
     val name: String,
     val cases: Iterable<String>,
-    val caseNameFactory: (T) -> String,
-    val caseFactory: (String) -> T,
+    internal val caseNameFactory: (T) -> String,
+    internal val caseFactory: (String) -> T,
     documentation: String? = null
 ) : TypeDefinition<T>(documentation) {
     override fun Encoder.encode(value: T) {
@@ -86,7 +90,7 @@ class Enum<T> constructor(
     }
 }
 
-class Object<T> constructor(
+class Object<T> internal constructor(
     val name: String,
     val properties: Iterable<Property<T>>,
     documentation: String? = null
@@ -124,7 +128,7 @@ class Object<T> constructor(
     }
 }
 
-data class Array<T> constructor(private val definition: TypeDefinition<T>) : TypeDefinition<Iterable<T>>(null) {
+data class Array<T> internal constructor(private val definition: TypeDefinition<T>) : TypeDefinition<Iterable<T>>(null) {
     override fun Encoder.encode(value: Iterable<T>) {
         unKeyed {
             value.forEach { element ->
@@ -138,7 +142,7 @@ data class Array<T> constructor(private val definition: TypeDefinition<T>) : Typ
     }
 }
 
-data class Nullable<T> constructor(private val definition: TypeDefinition<T>) : TypeDefinition<T?>(null) {
+data class Nullable<T> internal constructor(private val definition: TypeDefinition<T>) : TypeDefinition<T?>(null) {
     override fun Encoder.encode(value: T?) {
         value?.let { unwrapped ->
             with(definition) {
