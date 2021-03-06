@@ -124,7 +124,7 @@ class Object<T> constructor(
     }
 }
 
-class Array<T> constructor(private val definition: TypeDefinition<T>) : TypeDefinition<Iterable<T>>(null) {
+data class Array<T> constructor(private val definition: TypeDefinition<T>) : TypeDefinition<Iterable<T>>(null) {
     override fun Encoder.encode(value: Iterable<T>) {
         unKeyed {
             value.forEach { element ->
@@ -138,7 +138,7 @@ class Array<T> constructor(private val definition: TypeDefinition<T>) : TypeDefi
     }
 }
 
-class Nullable<T> constructor(private val definition: TypeDefinition<T>) : TypeDefinition<T?>(null) {
+data class Nullable<T> constructor(private val definition: TypeDefinition<T>) : TypeDefinition<T?>(null) {
     override fun Encoder.encode(value: T?) {
         value?.let { unwrapped ->
             with(definition) {
