@@ -112,7 +112,7 @@ internal class TypeDefinitionInferenceManager {
         val fields = kClass.declaredMemberProperties
         return Object(
             kClass.simpleName!!,
-            properties = fields.map {
+            properties = fields.mapNotNull {
                 it.property(inferenceManager = this)
             }
         )
@@ -175,10 +175,27 @@ private fun Class<*>.implements(interfaceClass: Class<*>): Boolean {
     return relevant.any { it.implements(interfaceClass) }
 }
 
-private fun <Source, T> KCallable<T>.property(inferenceManager: TypeDefinitionInferenceManager): Object.Property<Source> {
+private fun <Source, T> KCallable<T>.property(inferenceManager: TypeDefinitionInferenceManager): Object.Property<Source>? {
+    if (annotations.contains<Hidden>()) {
+        return null
+    }
+
+    val name = annotations.annotation<Renamed>()?.name ?: name
     return Object.ConcreteProperty(
         name = name,
         definition = inferenceManager.infer(returnType),
         getter = { this@property.call(this) }
     )
+}
+
+private inline fun <reified T : Annotation> Iterable<Annotation>.contains(): Boolean {
+    val type = T::class
+    return any { type.isInstance(it) }
+}
+
+private inline fun <reified T : Annotation> Iterable<Annotation>.annotation(): T? {
+    forEach { annotation ->
+        (annotation as? T)?.let { return it }
+    }
+    return null
 }
