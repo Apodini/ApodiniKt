@@ -2,7 +2,6 @@ package de.tum.`in`.ase.apodini
 
 import de.tum.`in`.ase.apodini.configuration.ConfigurationBuilder
 import de.tum.`in`.ase.apodini.exporter.RESTExporter
-import de.tum.`in`.ase.apodini.model.SemanticModel
 import de.tum.`in`.ase.apodini.model.semanticModel
 
 interface WebService: Component {

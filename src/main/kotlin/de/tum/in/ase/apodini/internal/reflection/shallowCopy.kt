@@ -1,7 +1,5 @@
 package de.tum.`in`.ase.apodini.internal.reflection
 
-import de.tum.`in`.ase.apodini.internal.createInstance
-
 internal fun <T> T.shallowCopy(): T {
     if (this == null)
         return this

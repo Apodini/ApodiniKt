@@ -1,4 +1,4 @@
-package de.tum.`in`.ase.apodini.internal
+package de.tum.`in`.ase.apodini.internal.reflection
 
 import sun.misc.Unsafe
 import kotlin.reflect.KClass
