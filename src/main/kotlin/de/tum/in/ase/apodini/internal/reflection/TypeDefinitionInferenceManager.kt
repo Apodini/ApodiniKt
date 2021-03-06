@@ -177,9 +177,10 @@ private class StandardTypeDefinitionBuilder(
         name: String?,
         documentation: String?,
         init: EnumDefinitionBuilder<T>.() -> Unit
-    ): Enum<T> {
-        TODO("Not yet implemented")
-    }
+    ) = StandardEnumBuilder<T>(
+        name ?: defaultName,
+        documentation ?: defaultDocumentation
+    ).apply(init).build()
 
     override fun <T> string(
         name: String?,
