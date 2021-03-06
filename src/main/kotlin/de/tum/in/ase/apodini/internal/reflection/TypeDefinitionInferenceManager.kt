@@ -18,15 +18,12 @@ internal class TypeDefinitionInferenceManager {
         typeOf<Double>() to DoubleType,
     )
 
-    @OptIn(ExperimentalStdlibApi::class)
-    private val classes by lazy {
-        val map = mutableMapOf<KClass<*>, TypeDefinition<*>>()
+    private val classes = mutableMapOf<KClass<*>, TypeDefinition<*>>().also { map ->
         kTypes.forEach { (type, definition) ->
             if (!type.isMarkedNullable && type.arguments.isEmpty()) {
                 map[type.classifier as KClass<*>] = definition
             }
         }
-        map
     }
 
     fun <T> infer(type: KType): TypeDefinition<T> {
