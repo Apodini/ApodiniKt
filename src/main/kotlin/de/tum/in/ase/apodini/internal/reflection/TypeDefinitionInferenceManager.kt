@@ -213,7 +213,7 @@ private class StandardObjectBuilder<T>(
     val kClass: KClass<*>,
     val inferenceManager: TypeDefinitionInferenceManager
 ) : ObjectDefinitionBuilder<T>() {
-    private val properties = mutableListOf<Object.Property<T>>()
+    private val properties = mutableListOf<Object.Property<T, *>>()
 
     override fun inferFromStructure() {
         val fields = kClass.declaredMemberProperties
@@ -226,7 +226,7 @@ private class StandardObjectBuilder<T>(
     }
 
     override fun <V> property(name: String, type: KType, documentation: String?, getter: T.() -> V) {
-        properties.add(Object.ConcreteProperty(name, documentation, inferenceManager.infer<V>(type), getter))
+        properties.add(Object.Property(name, documentation, inferenceManager.infer(type), getter))
     }
 
     fun build(): Object<T> {
@@ -266,14 +266,14 @@ private fun Class<*>.implements(interfaceClass: Class<*>): Boolean {
     return relevant.any { it.implements(interfaceClass) }
 }
 
-private fun <Source, T> KCallable<T>.property(inferenceManager: TypeDefinitionInferenceManager): Object.Property<Source>? {
+private fun <Source, T> KCallable<T>.property(inferenceManager: TypeDefinitionInferenceManager): Object.Property<Source, *>? {
     if (annotations.contains<Hidden>()) {
         return null
     }
 
     val name = annotations.annotation<Renamed>()?.name ?: name
     val documentation = annotations.annotation<Documented>()?.documentation
-    return Object.ConcreteProperty(
+    return Object.Property(
         name = name,
         documentation = documentation,
         definition = inferenceManager.infer(returnType),

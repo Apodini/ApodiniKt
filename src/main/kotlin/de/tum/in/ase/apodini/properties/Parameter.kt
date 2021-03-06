@@ -28,7 +28,7 @@ internal fun <T> parameter(
 }
 
 class Parameter<T> internal constructor(
-    private val name: String?,
+    val name: String?,
     private val type: KType,
     private val options: OptionSet<Parameter<T>>
 ): RequestInjectable {

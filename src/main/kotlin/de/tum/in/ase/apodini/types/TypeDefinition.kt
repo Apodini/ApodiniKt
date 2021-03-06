@@ -34,11 +34,11 @@ internal object DoubleType : ScalarType<Double>("Double") {
 
 class Scalar<T, Encoded> internal constructor(
     name: String? = null,
-    private val kind: ScalarType<Encoded>,
+    val kind: ScalarType<Encoded>,
     documentation: String? = null,
     private val extract: T.() -> Encoded
 ) : TypeDefinition<T>(documentation) {
-    private val name = name ?: kind
+    val name = name ?: kind
 
     override fun Encoder.encode(value: T) {
         val encoded = value.extract()
@@ -92,23 +92,17 @@ class Enum<T> internal constructor(
 
 class Object<T> internal constructor(
     val name: String,
-    val properties: Iterable<Property<T>>,
+    val properties: Iterable<Property<T, *>>,
     documentation: String? = null
 ) : TypeDefinition<T>(documentation) {
-    abstract class Property<Source>(
-        val name: String,
-        val documentation: String? = null
-    ) {
-        abstract fun Encoder.KeyedContainer.encode(source: Source)
-    }
 
-    class ConcreteProperty<Source, T>(
-        name: String,
-        documentation: String? = null,
-        private val definition: TypeDefinition<T>,
+    class Property<Source, T>(
+        val name: String,
+        val documentation: String? = null,
+        val definition: TypeDefinition<T>,
         private val getter: Source.() -> T
-    ) : Property<Source>(name, documentation) {
-        override fun Encoder.KeyedContainer.encode(source: Source) {
+    ) {
+        fun Encoder.KeyedContainer.encode(source: Source) {
             encode(name) {
                 with(definition) {
                     encode(getter(source))
@@ -128,7 +122,7 @@ class Object<T> internal constructor(
     }
 }
 
-data class Array<T> internal constructor(private val definition: TypeDefinition<T>) : TypeDefinition<Iterable<T>>(null) {
+data class Array<T> internal constructor(val definition: TypeDefinition<T>) : TypeDefinition<Iterable<T>>(null) {
     override fun Encoder.encode(value: Iterable<T>) {
         unKeyed {
             value.forEach { element ->
@@ -142,7 +136,7 @@ data class Array<T> internal constructor(private val definition: TypeDefinition<
     }
 }
 
-data class Nullable<T> internal constructor(private val definition: TypeDefinition<T>) : TypeDefinition<T?>(null) {
+data class Nullable<T> internal constructor(val definition: TypeDefinition<T>) : TypeDefinition<T?>(null) {
     override fun Encoder.encode(value: T?) {
         value?.let { unwrapped ->
             with(definition) {

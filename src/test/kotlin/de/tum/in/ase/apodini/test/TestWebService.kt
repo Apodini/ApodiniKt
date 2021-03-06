@@ -14,9 +14,14 @@ import de.tum.`in`.ase.apodini.logging.logger
 import de.tum.`in`.ase.apodini.properties.*
 import de.tum.`in`.ase.apodini.properties.options.default
 import de.tum.`in`.ase.apodini.properties.options.http
+import de.tum.`in`.ase.apodini.run
 import de.tum.`in`.ase.apodini.types.*
 import java.lang.IllegalArgumentException
 import kotlin.coroutines.CoroutineContext
+
+fun main() {
+    TestWebService.run()
+}
 
 object TestWebService : WebService {
     private val userId = pathParameter()
@@ -48,7 +53,7 @@ object TestWebService : WebService {
     }
 
     override fun ConfigurationBuilder.configure() {
-        use(RESTExporter())
+        use(PrintExporter)
 
         environment {
             secret {
