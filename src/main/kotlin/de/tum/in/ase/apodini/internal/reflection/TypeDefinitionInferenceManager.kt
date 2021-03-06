@@ -1,6 +1,7 @@
 package de.tum.`in`.ase.apodini.internal.reflection
 
 import de.tum.`in`.ase.apodini.types.*
+import de.tum.`in`.ase.apodini.types.Enum
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.lang.reflect.TypeVariable
@@ -72,11 +73,11 @@ internal class TypeDefinitionInferenceManager {
         val javaClass = kClass.java
         val name = kClass.annotations.annotation<Renamed>()?.name ?: kClass.simpleName!!
         val documentation = kClass.annotations.annotation<Documented>()?.documentation
+        val builder = StandardTypeDefinitionBuilder(name, documentation, kClass, this)
 
         // Handle CustomType
         if (javaClass.implements(CustomType::class.java)) {
             val value = createInstance(kClass) as CustomType<*>
-            val builder = StandardTypeDefinitionBuilder(name, documentation, kClass, this)
             return with(value) {
                 @Suppress("UNCHECKED_CAST")
                 builder.definition() as TypeDefinition<T>
@@ -95,30 +96,16 @@ internal class TypeDefinitionInferenceManager {
         // Handle Enums
         if (javaClass.isEnum) {
             val caseFields = javaClass.declaredFields.filter { it.isEnumConstant }
-            val caseNames = caseFields.map { it.name }
-            val cases = caseFields.map { field ->
-                @Suppress("UNCHECKED_CAST")
-                field.get(null) as T
+            return builder.enum {
+                caseFields.forEach { field ->
+                    @Suppress("UNCHECKED_CAST")
+                    case(field.name, field.get(null) as T)
+                }
             }
-
-            val caseNameToCase = caseNames.zip(cases).toMap()
-            val caseToCaseName = cases.zip(caseNames).toMap()
-
-            return Enum(
-                name,
-                cases = caseNames,
-                caseNameFactory = { caseToCaseName.getValue(it) },
-                caseFactory = { caseNameToCase.getValue(it) }
-            )
         }
 
         // Handle Objects
-        return StandardTypeDefinitionBuilder(
-            name,
-            documentation,
-            kClass,
-            this
-        ).`object` { inferFromStructure() }
+        return builder.`object` { inferFromStructure() }
     }
 }
 
@@ -186,6 +173,14 @@ private class StandardTypeDefinitionBuilder(
         inferenceManager
     ).apply(init).build()
 
+    override fun <T> enum(
+        name: String?,
+        documentation: String?,
+        init: EnumDefinitionBuilder<T>.() -> Unit
+    ): Enum<T> {
+        TODO("Not yet implemented")
+    }
+
     override fun <T> string(
         name: String?,
         documentation: String?,
@@ -236,6 +231,29 @@ private class StandardObjectBuilder<T>(
     fun build(): Object<T> {
         return Object(name, properties, documentation)
     }
+}
+private class StandardEnumBuilder<T>(
+    val name: String,
+    val documentation: String?
+) : EnumDefinitionBuilder<T> {
+    val caseNameToCase = mutableMapOf<String, T>()
+    val caseToCaseName = mutableMapOf<T, String>()
+
+    override fun case(name: String, value: T) {
+        caseNameToCase[name] = value
+        caseToCaseName[value] = name
+    }
+
+    fun build(): Enum<T> {
+        return Enum(
+            name,
+            cases = caseNameToCase.keys,
+            caseNameFactory = { caseToCaseName.getValue(it) },
+            caseFactory = { caseNameToCase.getValue(it) },
+            documentation
+        )
+    }
+
 }
 
 private fun Class<*>.implements(interfaceClass: Class<*>): Boolean {

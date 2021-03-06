@@ -10,6 +10,12 @@ interface TypeDefinitionBuilder {
         init: ObjectDefinitionBuilder<T>.() -> Unit
     ): Object<T>
 
+    fun <T> enum(
+        name: String? = null,
+        documentation: String? = null,
+        init: EnumDefinitionBuilder<T>.() -> Unit
+    ): Enum<T>
+
     fun <T> string(
         name: String? = null,
         documentation: String? = null,
@@ -45,4 +51,8 @@ abstract class ObjectDefinitionBuilder<T> {
     inline fun <reified V> property(name: String, documentation: String? = null, noinline getter: T.() -> V) {
         property(name, typeOf<V>(), documentation, getter)
     }
+}
+
+interface EnumDefinitionBuilder<T> {
+    fun case(name: String, value: T)
 }
