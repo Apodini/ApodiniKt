@@ -11,20 +11,31 @@ import kotlin.reflect.full.declaredMemberProperties
 
 internal class TypeDefinitionInferenceManager {
     @OptIn(ExperimentalStdlibApi::class)
-    private val types = mutableMapOf<KType, TypeDefinition<*>>(
+    private val kTypes = mutableMapOf<KType, TypeDefinition<*>>(
         typeOf<String>() to StringType,
         typeOf<Boolean>() to BooleanType,
         typeOf<Int>() to IntType,
         typeOf<Double>() to DoubleType,
     )
 
+    @OptIn(ExperimentalStdlibApi::class)
+    private val classes by lazy {
+        val map = mutableMapOf<KClass<*>, TypeDefinition<*>>()
+        kTypes.forEach { (type, definition) ->
+            if (!type.isMarkedNullable && type.arguments.isEmpty()) {
+                map[type.classifier as KClass<*>] = definition
+            }
+        }
+        map
+    }
+
     fun <T> infer(type: KType): TypeDefinition<T> {
-        types[type]?.let {
+        kTypes[type]?.let { definition ->
             @Suppress("UNCHECKED_CAST")
-            return it as TypeDefinition<T>
+            return definition as TypeDefinition<T>
         }
 
-        return inferImpl<T>(type).also { types[type] = it }
+        return inferImpl<T>(type).also { kTypes[type] = it }
     }
 
     private fun <T> inferImpl(type: KType): TypeDefinition<T> {
@@ -32,15 +43,36 @@ internal class TypeDefinitionInferenceManager {
 
         // Handle Nullable
         if (type.isMarkedNullable) {
-            val typeDefinition = inferImpl<T>(kClass, type.arguments)
+            val typeDefinition = infer<T>(NonnullKType(type))
             @Suppress("UNCHECKED_CAST")
             return Nullable(typeDefinition) as TypeDefinition<T>
         }
 
-        return inferImpl(kClass, type.arguments)
+        return infer(kClass, type.arguments)
+    }
+
+
+    private fun <T> infer(kClass: KClass<*>, arguments: List<KTypeProjection>): TypeDefinition<T> {
+        if (arguments.isEmpty()) {
+            classes[kClass]?.let { definition ->
+                @Suppress("UNCHECKED_CAST")
+                return definition as TypeDefinition<T>
+            }
+
+            return inferImpl<T>(kClass, arguments).also { classes[kClass] = it }
+        }
+
+        return inferImpl(kClass, arguments)
     }
 
     private fun <T> inferImpl(kClass: KClass<*>, arguments: List<KTypeProjection>): TypeDefinition<T> {
+        if (arguments.isEmpty()) {
+            classes[kClass]?.let { definition ->
+                @Suppress("UNCHECKED_CAST")
+                return definition as TypeDefinition<T>
+            }
+        }
+
         val javaClass = kClass.java
 
         // Handle CustomType
@@ -116,6 +148,11 @@ private fun Class<*>.iterableElement(arguments: List<KType?>): KType? {
     return null
 }
 
+data class NonnullKType(val type: KType) : KType by type {
+    override val isMarkedNullable: Boolean
+        get() = false
+}
+
 data class DummyKType(val type: Type) : KType {
     override val annotations: List<Annotation>
         get() = emptyList()
@@ -131,7 +168,6 @@ data class DummyKType(val type: Type) : KType {
 
     override val isMarkedNullable: Boolean
         get() = false
-
 }
 
 private fun Class<*>.implements(interfaceClass: Class<*>): Boolean {
