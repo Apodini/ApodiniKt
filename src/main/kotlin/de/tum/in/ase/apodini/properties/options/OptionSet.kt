@@ -3,6 +3,9 @@ package de.tum.`in`.ase.apodini.properties.options
 class OptionSet<P> private constructor(
     private val map: Map<OptionKey<P, *>, Any>
 ) {
+    val keys: Set<OptionKey<P, *>>
+        get() = map.keys
+
     constructor(init: OptionsBuilder<P>.() -> Unit) : this(OptionSetBuilder<P>().also(init).build())
 
     operator fun <T> get(key: OptionKey<P, T>): T? {

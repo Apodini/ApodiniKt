@@ -1,6 +1,7 @@
 package de.tum.`in`.ase.apodini.environment
 
 interface EnvironmentStore : EnvironmentKeys {
+    val keys: Set<EnvironmentKey<*>>
     fun contains(key: EnvironmentKey<*>): Boolean
 
     operator fun <T> get(key: EnvironmentKey<T>) : T
@@ -21,6 +22,9 @@ interface EnvironmentStore : EnvironmentKeys {
 private class StandardEnvironmentStore(
     private val store: Map<EnvironmentKey<*>, Any?>
 ) : EnvironmentStore {
+    override val keys: Set<EnvironmentKey<*>>
+        get() = store.keys
+
     override fun contains(key: EnvironmentKey<*>): Boolean {
         return store.containsKey(key)
     }

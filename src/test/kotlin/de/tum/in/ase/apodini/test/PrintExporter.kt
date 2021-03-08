@@ -2,6 +2,8 @@ package de.tum.`in`.ase.apodini.test
 
 import de.tum.`in`.ase.apodini.exporter.Exporter
 import de.tum.`in`.ase.apodini.model.SemanticModel
+import de.tum.`in`.ase.apodini.properties.Parameter
+import de.tum.`in`.ase.apodini.properties.options.OptionKey
 import de.tum.`in`.ase.apodini.types.*
 import de.tum.`in`.ase.apodini.types.Array
 import de.tum.`in`.ase.apodini.types.Enum
@@ -11,10 +13,19 @@ object PrintExporter : Exporter {
         print {
             separated {
                 appendLine("Exporting Web Service")
-                appendLine("Exporters")
+                appendLine("Exporters:")
                 indent {
                     model.exporters.forEach { exporter ->
                         appendLine("$exporter")
+                    }
+                }
+
+                if (model.globalEnvironment.keys.isNotEmpty()) {
+                    appendLine("Environment:")
+                    indent {
+                        model.globalEnvironment.keys.forEach { key ->
+                            appendLine("$key = ${model.globalEnvironment[key]!!}")
+                        }
                     }
                 }
             }
@@ -35,6 +46,31 @@ object PrintExporter : Exporter {
             }
 
             appendLine()
+            appendLine("Implementation: ${endpoint.handler::class.qualifiedName!!}")
+            if (endpoint.parameters.isNotEmpty()) {
+                appendLine("Parameters:")
+                indent {
+                    endpoint.parameters.forEach { parameter ->
+                        append("${parameter.name}: ${parameter.type}")
+                        if (parameter.defaultValue != null) {
+                            append(" = ${parameter.defaultValue}")
+                        }
+                        appendLine()
+                        if (parameter.options.keys.isNotEmpty()) {
+                            appendLine("Options:")
+                            indent {
+                                @Suppress("UNCHECKED_CAST")
+                                val keys = parameter.options.keys as Set<OptionKey<Parameter<*>, *>>
+
+                                keys.forEach { key ->
+                                    appendLine("$key = ${parameter.options[key]!!}")
+                                }
+                            }
+                            appendLine()
+                        }
+                    }
+                }
+            }
             append("Returns: ")
             type(endpoint.typeDefinition)
         }

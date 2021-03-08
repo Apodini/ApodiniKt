@@ -21,6 +21,9 @@ private class ChainedEnvironmentStore(
     val fallback: EnvironmentStore
 ): EnvironmentStore {
 
+    override val keys: Set<EnvironmentKey<*>>
+        get() = default.keys + fallback.keys
+
     override fun contains(key: EnvironmentKey<*>): Boolean {
         return default.contains(key) || fallback.contains(key)
     }
