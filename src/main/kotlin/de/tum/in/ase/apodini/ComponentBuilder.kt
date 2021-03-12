@@ -10,7 +10,6 @@ abstract class ComponentBuilder {
     @PublishedApi
     internal abstract fun <T> add(handler: Handler<T>, returnType: KType)
 
-    @ComponentDsl
     operator fun Component.unaryPlus() {
         add(this)
     }

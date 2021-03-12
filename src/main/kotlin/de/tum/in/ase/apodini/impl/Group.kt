@@ -1,22 +1,18 @@
 package de.tum.`in`.ase.apodini.impl
 
 import de.tum.`in`.ase.apodini.ComponentBuilder
-import de.tum.`in`.ase.apodini.ComponentDsl
 import de.tum.`in`.ase.apodini.internal.ComponentVisitor
 import de.tum.`in`.ase.apodini.internal.InternalComponent
 import de.tum.`in`.ase.apodini.properties.PathParameter
 
-@ComponentDsl
 fun ComponentBuilder.group(name: String, init: ComponentBuilder.() -> Unit) {
     +Group(Group.Kind.Named(name), init)
 }
 
-@ComponentDsl
 fun ComponentBuilder.group(vararg names: String, init: ComponentBuilder.() -> Unit) {
     group(names.asList(), init)
 }
 
-@ComponentDsl
 private fun ComponentBuilder.group(names: Collection<String>, init: ComponentBuilder.() -> Unit) {
     if (names.isEmpty()) {
         init()
@@ -27,12 +23,10 @@ private fun ComponentBuilder.group(names: Collection<String>, init: ComponentBui
     }
 }
 
-@ComponentDsl
 fun ComponentBuilder.group(parameter: PathParameter, init: ComponentBuilder.() -> Unit) {
     +Group(Group.Kind.Parameter(parameter), init)
 }
 
-@ComponentDsl
 fun ComponentBuilder.group(c0: String, c1: PathParameter, init: ComponentBuilder.() -> Unit) {
     group(c0) {
         group(c1) {
@@ -41,7 +35,6 @@ fun ComponentBuilder.group(c0: String, c1: PathParameter, init: ComponentBuilder
     }
 }
 
-@ComponentDsl
 fun ComponentBuilder.group(c0: PathParameter, c1: String, init: ComponentBuilder.() -> Unit) {
     group(c0) {
         group(c1) {
@@ -50,7 +43,6 @@ fun ComponentBuilder.group(c0: PathParameter, c1: String, init: ComponentBuilder
     }
 }
 
-@ComponentDsl
 fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, init: ComponentBuilder.() -> Unit) {
     group(c0) {
         group(c1) {
@@ -59,7 +51,6 @@ fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, init: Component
     }
 }
 
-@ComponentDsl
 fun ComponentBuilder.group(c0: String, c1: PathParameter, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
     group(c0, c1) {
         group(c2) {
@@ -68,7 +59,6 @@ fun ComponentBuilder.group(c0: String, c1: PathParameter, c2: PathParameter, ini
     }
 }
 
-@ComponentDsl
 fun ComponentBuilder.group(c0: PathParameter, c1: String, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
     group(c0, c1) {
         group(c2) {
@@ -77,7 +67,6 @@ fun ComponentBuilder.group(c0: PathParameter, c1: String, c2: PathParameter, ini
     }
 }
 
-@ComponentDsl
 fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, c2: String, init: ComponentBuilder.() -> Unit) {
     group(c0, c1) {
         group(c2) {
@@ -86,7 +75,6 @@ fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, c2: String, ini
     }
 }
 
-@ComponentDsl
 fun ComponentBuilder.group(c0: String, c1: String, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
     group(c0, c1) {
         group(c2) {
@@ -95,7 +83,6 @@ fun ComponentBuilder.group(c0: String, c1: String, c2: PathParameter, init: Comp
     }
 }
 
-@ComponentDsl
 fun ComponentBuilder.group(c0: String, c1: PathParameter, c2: String, init: ComponentBuilder.() -> Unit) {
     group(c0, c1) {
         group(c2) {
@@ -103,7 +90,7 @@ fun ComponentBuilder.group(c0: String, c1: PathParameter, c2: String, init: Comp
         }
     }
 }
-@ComponentDsl
+
 fun ComponentBuilder.group(c0: PathParameter, c1: String, c2: String, init: ComponentBuilder.() -> Unit) {
     group(c0, c1) {
         group(c2) {
@@ -112,7 +99,6 @@ fun ComponentBuilder.group(c0: PathParameter, c1: String, c2: String, init: Comp
     }
 }
 
-@ComponentDsl
 fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
     group(c0, c1) {
         group(c2) {

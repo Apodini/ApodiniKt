@@ -29,6 +29,18 @@ internal fun <T> parameter(
 
 class Parameter<T> internal constructor(
     val name: String?,
+    type: KType,
+    options: OptionSet<Parameter<T>>
+): DynamicProperty {
+    private val value by ParameterBox(name, type, options)
+
+    operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
+        return value
+    }
+}
+
+private class ParameterBox<T>(
+    val name: String?,
     private val type: KType,
     private val options: OptionSet<Parameter<T>>
 ): RequestInjectable {
