@@ -1,22 +1,22 @@
 package de.tum.`in`.ase.apodini.model
 
 import de.tum.`in`.ase.apodini.Handler
-import de.tum.`in`.ase.apodini.environment.EnvironmentStore
-import de.tum.`in`.ase.apodini.environment.extend
-import de.tum.`in`.ase.apodini.environment.override
-import de.tum.`in`.ase.apodini.environment.request
+import de.tum.`in`.ase.apodini.environment.*
 import de.tum.`in`.ase.apodini.exporter.Exporter
 import de.tum.`in`.ase.apodini.internal.RequestInjectable
 import de.tum.`in`.ase.apodini.internal.reflection.modify
 import de.tum.`in`.ase.apodini.internal.reflection.shallowCopy
 import de.tum.`in`.ase.apodini.internal.reflection.traverseSuspended
+import de.tum.`in`.ase.apodini.logging.logger
 import de.tum.`in`.ase.apodini.properties.DynamicProperty
 import de.tum.`in`.ase.apodini.properties.Parameter as ParameterProperty
 import de.tum.`in`.ase.apodini.properties.PathParameter
+import de.tum.`in`.ase.apodini.properties.environment
 import de.tum.`in`.ase.apodini.properties.options.OptionSet
 import de.tum.`in`.ase.apodini.request.Request
 import de.tum.`in`.ase.apodini.types.Encoder
 import de.tum.`in`.ase.apodini.types.TypeDefinition
+import java.lang.Exception
 import java.util.*
 import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KType
@@ -66,19 +66,29 @@ class SemanticModel internal constructor(
         }
 
         suspend operator fun Request.invoke(encoder: Encoder) {
-            val request = DelegatedRequest(this, semanticModel.globalEnvironment, environment)
+            val newInstance = this@Endpoint.handler.shallowCopy()
+            val request = DelegatedRequest(this, newInstance, semanticModel.globalEnvironment, environment)
 
-            val newInstance = handler.shallowCopy()
-            newInstance.modify<RequestInjectable> { injectable ->
-                injectable.shallowCopy().apply { inject(request) }
-            }
-            newInstance.traverseSuspended<DynamicProperty> { property ->
-                property.update()
-            }
+            try {
+                newInstance.modify<RequestInjectable> { injectable ->
+                    injectable.shallowCopy().apply { inject(request) }
+                }
+                newInstance.traverseSuspended<DynamicProperty> { property ->
+                    property.update()
+                }
 
-            val value = with(newInstance) { compute() }
-            with(typeDefinition) {
-                encoder.encode(value)
+                val value = with(newInstance) { compute() }
+                with(typeDefinition) {
+                    encoder.encode(value)
+                }
+            } catch (exception: Exception) {
+                request.logger.error {
+                    """
+                        Failed to respond due to exception: ${exception.localizedMessage}
+                        
+                        ${exception.stackTraceToString()}
+                    """.trimIndent()
+                }
             }
         }
     }
@@ -86,9 +96,20 @@ class SemanticModel internal constructor(
 
 private class DelegatedRequest(
     private val request: Request,
+    handler: Handler<*>,
     global: EnvironmentStore,
     endpoint: EnvironmentStore
-) : EnvironmentStore by request.extend(global).override(endpoint).extend({ request { request } }),
+) : EnvironmentStore by request
+        .extend(global)
+        .override(endpoint)
+        .extend({
+            request {
+                request
+            }
+            handler {
+                handler
+            }
+        }),
     CoroutineContext by request,
     Request {
 

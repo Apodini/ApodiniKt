@@ -3,6 +3,9 @@ package de.tum.`in`.ase.apodini.properties
 import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.environment.EnvironmentKeys
 import de.tum.`in`.ase.apodini.internal.RequestInjectable
+import de.tum.`in`.ase.apodini.internal.reflection.contains
+import de.tum.`in`.ase.apodini.internal.reflection.modify
+import de.tum.`in`.ase.apodini.internal.reflection.shallowCopy
 import de.tum.`in`.ase.apodini.request.Request
 import kotlin.reflect.KProperty
 
@@ -18,7 +21,17 @@ data class Environment<T> internal constructor(
     private var value: T? = null
 
     override fun inject(request: Request) {
-        value = request[key]
+        value = request[key].let { value ->
+            if (value != null && value.contains<RequestInjectable>()) {
+                value.shallowCopy().also { newValue ->
+                    newValue.modify<RequestInjectable> { injectable ->
+                        injectable.shallowCopy().apply { inject(request) }
+                    }
+                }
+            } else {
+                value
+            }
+        }
     }
 
     operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
