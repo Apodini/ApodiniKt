@@ -109,7 +109,6 @@ internal class TypeDefinitionInferenceManager {
     }
 }
 
-@OptIn(ExperimentalStdlibApi::class)
 private fun Class<*>.iterableElement(arguments: List<KType?>): KType? {
     if (this == Iterable::class.java) {
         return arguments.first()

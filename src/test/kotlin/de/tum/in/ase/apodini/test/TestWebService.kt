@@ -85,7 +85,7 @@ data class User(
     @Hidden
     val privateAttribute: Int = 42
 
-    override fun TypeDefinitionBuilder.definition(): TypeDefinition<User> = `object` {
+    override fun TypeDefinitionBuilder.definition() = `object`<User> {
         inferFromStructure()
 
         property("upperCaseName") {

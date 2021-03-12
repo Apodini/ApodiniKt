@@ -3,6 +3,7 @@ package de.tum.`in`.ase.apodini
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
+@ComponentDsl
 abstract class ComponentBuilder {
     protected abstract fun add(component: Component)
 
