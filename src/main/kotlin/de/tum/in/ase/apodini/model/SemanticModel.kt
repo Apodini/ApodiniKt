@@ -48,6 +48,7 @@ class SemanticModel internal constructor(
         val path: List<PathComponent>,
         val typeDefinition: TypeDefinition<T>,
         val handler: Handler<T>,
+        val documentation: String?,
         val environment: EnvironmentStore,
         val parameters: List<Parameter<*>>,
     ) {

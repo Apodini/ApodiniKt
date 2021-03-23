@@ -18,8 +18,10 @@ import de.tum.`in`.ase.apodini.properties.Parameter
 import de.tum.`in`.ase.apodini.properties.options.OptionSet
 import de.tum.`in`.ase.apodini.properties.options.default
 import de.tum.`in`.ase.apodini.internal.reflection.TypeDefinitionInferenceManager
+import de.tum.`in`.ase.apodini.types.Documented
 import java.util.*
 import kotlin.reflect.KType
+import kotlin.reflect.full.findAnnotation
 
 internal fun WebService.semanticModel(): SemanticModel {
     val configurationBuilder = StandardConfigurationBuilder()
@@ -94,6 +96,8 @@ private class StandardComponentBuilder(
     }
 
     override fun <T> add(handler: Handler<T>, returnType: KType) {
+        val documentation = handler::class.findAnnotation<Documented>()?.documentation
+
         val parameters = ParameterCollector()
             .also { collector ->
                 handler.traverse<RequestInjectable> { name, injectable ->
@@ -109,6 +113,7 @@ private class StandardComponentBuilder(
             path = path,
             typeDefinition = cursor.inferenceManager.infer(returnType),
             handler = handler,
+            documentation = documentation,
             environment = EnvironmentStore.empty,
             parameters = parameters
         )
