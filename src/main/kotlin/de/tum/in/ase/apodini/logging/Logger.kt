@@ -9,6 +9,12 @@ interface Logger {
         Fatal, Error, Warning, Info, Debug
     }
 
+    sealed class LogLevelPreference {
+        class Minimum(val level: LogLevel) : LogLevelPreference()
+        object Off : LogLevelPreference()
+        object Everything : LogLevelPreference()
+    }
+
     interface MessageFormatter {
         fun LogLevel.format(
             message: String
@@ -85,10 +91,14 @@ private object ConsoleLogger : Logger {
     private val preferredLogLevel by environment { preferredLogLevel }
 
     override fun Logger.LogLevel.invoke(message: () -> String) {
-        if (ordinal <= preferredLogLevel.ordinal) {
-            with(formatter) {
-                print(format(message()))
-            }
+        when (val preference = preferredLogLevel) {
+            is Logger.LogLevelPreference.Minimum -> if (ordinal > preference.level.ordinal) return
+            Logger.LogLevelPreference.Off -> return
+            else -> {}
+        }
+
+        with(formatter) {
+            print(format(message()))
         }
     }
 }
