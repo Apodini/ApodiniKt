@@ -8,6 +8,7 @@ import de.tum.`in`.ase.apodini.types.Nullable
 import de.tum.`in`.ase.apodini.types.StringType
 import junit.framework.TestCase
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.suspendCoroutine
 
 internal class SemanticModelBuilderTest : TestCase() {
 

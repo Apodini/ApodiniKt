@@ -1,21 +1,23 @@
 package de.tum.`in`.ase.apodini.impl
 
+import de.tum.`in`.ase.apodini.Component
 import de.tum.`in`.ase.apodini.ComponentBuilder
 import de.tum.`in`.ase.apodini.internal.ComponentVisitor
 import de.tum.`in`.ase.apodini.internal.InternalComponent
+import de.tum.`in`.ase.apodini.modifiers.ModifiableComponent
 import de.tum.`in`.ase.apodini.properties.PathParameter
 
-fun ComponentBuilder.group(name: String, init: ComponentBuilder.() -> Unit) {
-    +Group(Group.Kind.Named(name), init)
+fun ComponentBuilder.group(name: String, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return +Group(Group.Kind.Named(name), init)
 }
 
-fun ComponentBuilder.group(vararg names: String, init: ComponentBuilder.() -> Unit) {
-    group(names.asList(), init)
+fun ComponentBuilder.group(vararg names: String, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return group(names.asList(), init)
 }
 
-private fun ComponentBuilder.group(names: Collection<String>, init: ComponentBuilder.() -> Unit) {
-    if (names.isEmpty()) {
-        init()
+private fun ComponentBuilder.group(names: Collection<String>, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return if (names.isEmpty()) {
+        +EmptyKindGroup(init)
     } else {
         group(names.first()) {
             group(names.drop(1), init)
@@ -23,87 +25,95 @@ private fun ComponentBuilder.group(names: Collection<String>, init: ComponentBui
     }
 }
 
-fun ComponentBuilder.group(parameter: PathParameter, init: ComponentBuilder.() -> Unit) {
-    +Group(Group.Kind.Parameter(parameter), init)
+fun ComponentBuilder.group(parameter: PathParameter, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return +Group(Group.Kind.Parameter(parameter), init)
 }
 
-fun ComponentBuilder.group(c0: String, c1: PathParameter, init: ComponentBuilder.() -> Unit) {
-    group(c0) {
+fun ComponentBuilder.group(c0: String, c1: PathParameter, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return group(c0) {
         group(c1) {
             init()
         }
     }
 }
 
-fun ComponentBuilder.group(c0: PathParameter, c1: String, init: ComponentBuilder.() -> Unit) {
-    group(c0) {
+fun ComponentBuilder.group(c0: PathParameter, c1: String, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return group(c0) {
         group(c1) {
             init()
         }
     }
 }
 
-fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, init: ComponentBuilder.() -> Unit) {
-    group(c0) {
+fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return group(c0) {
         group(c1) {
             init()
         }
     }
 }
 
-fun ComponentBuilder.group(c0: String, c1: PathParameter, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
-    group(c0, c1) {
+fun ComponentBuilder.group(c0: String, c1: PathParameter, c2: PathParameter, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return group(c0, c1) {
         group(c2) {
             init()
         }
     }
 }
 
-fun ComponentBuilder.group(c0: PathParameter, c1: String, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
-    group(c0, c1) {
+fun ComponentBuilder.group(c0: PathParameter, c1: String, c2: PathParameter, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return group(c0, c1) {
         group(c2) {
             init()
         }
     }
 }
 
-fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, c2: String, init: ComponentBuilder.() -> Unit) {
-    group(c0, c1) {
+fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, c2: String, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return group(c0, c1) {
         group(c2) {
             init()
         }
     }
 }
 
-fun ComponentBuilder.group(c0: String, c1: String, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
-    group(c0, c1) {
+fun ComponentBuilder.group(c0: String, c1: String, c2: PathParameter, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return group(c0, c1) {
         group(c2) {
             init()
         }
     }
 }
 
-fun ComponentBuilder.group(c0: String, c1: PathParameter, c2: String, init: ComponentBuilder.() -> Unit) {
-    group(c0, c1) {
+fun ComponentBuilder.group(c0: String, c1: PathParameter, c2: String, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return group(c0, c1) {
         group(c2) {
             init()
         }
     }
 }
 
-fun ComponentBuilder.group(c0: PathParameter, c1: String, c2: String, init: ComponentBuilder.() -> Unit) {
-    group(c0, c1) {
+fun ComponentBuilder.group(c0: PathParameter, c1: String, c2: String, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return group(c0, c1) {
         group(c2) {
             init()
         }
     }
 }
 
-fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, c2: PathParameter, init: ComponentBuilder.() -> Unit) {
-    group(c0, c1) {
+fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, c2: PathParameter, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
+    return group(c0, c1) {
         group(c2) {
             init()
         }
+    }
+}
+
+private class EmptyKindGroup(
+    private val init: ComponentBuilder.() -> Unit
+) : Component {
+    override fun ComponentBuilder.invoke() {
+        init()
     }
 }
 

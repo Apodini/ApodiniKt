@@ -1,8 +1,6 @@
 package de.tum.`in`.ase.apodini.test
 
-import de.tum.`in`.ase.apodini.ComponentBuilder
-import de.tum.`in`.ase.apodini.Handler
-import de.tum.`in`.ase.apodini.WebService
+import de.tum.`in`.ase.apodini.*
 import de.tum.`in`.ase.apodini.configuration.ConfigurationBuilder
 import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.environment.EnvironmentKeys
@@ -11,10 +9,10 @@ import de.tum.`in`.ase.apodini.exporter.RESTExporter
 import de.tum.`in`.ase.apodini.impl.text
 import de.tum.`in`.ase.apodini.impl.group
 import de.tum.`in`.ase.apodini.logging.logger
+import de.tum.`in`.ase.apodini.modifiers.withEnvironment
 import de.tum.`in`.ase.apodini.properties.*
 import de.tum.`in`.ase.apodini.properties.options.default
 import de.tum.`in`.ase.apodini.properties.options.http
-import de.tum.`in`.ase.apodini.run
 import de.tum.`in`.ase.apodini.types.*
 import java.lang.IllegalArgumentException
 import kotlin.coroutines.CoroutineContext
@@ -40,10 +38,18 @@ object TestWebService : WebService {
         }
 
         group("user", userId) {
-            +GreeterForUser(userId)
+            +GreeterForUser(userId).withEnvironment {
+                secret {
+                    0
+                }
+            }
 
             group("post") {
                 +PostsForUser(userId)
+            }
+        }.withEnvironment {
+            secret {
+                1337
             }
         }
 

@@ -73,6 +73,15 @@ object PrintExporter : Exporter {
             }
             append("Returns: ")
             type(endpoint.typeDefinition)
+
+            if (endpoint.environment.keys.isNotEmpty()) {
+                appendLine("Environment:")
+                indent {
+                    endpoint.environment.keys.forEach { key ->
+                        appendLine("$key = ${endpoint.environment[key]!!}")
+                    }
+                }
+            }
         }
     }
 

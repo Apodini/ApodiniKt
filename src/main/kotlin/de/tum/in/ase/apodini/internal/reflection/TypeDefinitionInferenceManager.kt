@@ -26,6 +26,15 @@ internal class TypeDefinitionInferenceManager {
         }
     }
 
+    private val reference = object : InferenceManagerReference {
+        override val manager: TypeDefinitionInferenceManager
+            get() = this@TypeDefinitionInferenceManager
+
+        override fun cache(definition: TypeDefinition<*>, kClass: KClass<*>) {
+            classes[kClass] = definition
+        }
+    }
+
     fun <T> infer(type: KType): TypeDefinition<T> {
         kTypes[type]?.let { definition ->
             @Suppress("UNCHECKED_CAST")
@@ -73,7 +82,7 @@ internal class TypeDefinitionInferenceManager {
         val javaClass = kClass.java
         val name = kClass.annotations.annotation<Renamed>()?.name ?: kClass.simpleName!!
         val documentation = kClass.annotations.annotation<Documented>()?.documentation
-        val builder = StandardTypeDefinitionBuilder(name, documentation, kClass, this)
+        val builder = StandardTypeDefinitionBuilder(name, documentation, kClass, reference)
 
         // Handle CustomType
         if (javaClass.implements(CustomType::class.java)) {
@@ -107,6 +116,11 @@ internal class TypeDefinitionInferenceManager {
         // Handle Objects
         return builder.`object` { inferFromStructure() }
     }
+}
+
+private interface InferenceManagerReference {
+    val manager: TypeDefinitionInferenceManager
+    fun cache(definition: TypeDefinition<*>, kClass: KClass<*>)
 }
 
 private fun Class<*>.iterableElement(arguments: List<KType?>): KType? {
@@ -159,18 +173,22 @@ private class StandardTypeDefinitionBuilder(
     val defaultName: String,
     val defaultDocumentation: String?,
     val kClass: KClass<*>,
-    val inferenceManager: TypeDefinitionInferenceManager
+    val inferenceManagerReference: InferenceManagerReference
 ) : TypeDefinitionBuilder {
     override fun <T> `object`(
         name: String?,
         documentation: String?,
         init: ObjectDefinitionBuilder<T>.() -> Unit
-    ) = StandardObjectBuilder<T>(
-        name ?: defaultName,
-        documentation ?: defaultDocumentation,
-        kClass,
-        inferenceManager
-    ).apply(init).build()
+    ): Object<T> {
+        val definition = Object<T>(name ?: defaultName, documentation ?: defaultDocumentation)
+        inferenceManagerReference.cache(definition, kClass)
+
+        return StandardObjectBuilder(
+            definition,
+            kClass,
+            inferenceManagerReference.manager
+        ).apply(init).build()
+    }
 
     override fun <T> enum(
         name: String?,
@@ -207,17 +225,15 @@ private class StandardTypeDefinitionBuilder(
 }
 
 private class StandardObjectBuilder<T>(
-    val name: String,
-    val documentation: String?,
+    private val definition: Object<T>,
     val kClass: KClass<*>,
     val inferenceManager: TypeDefinitionInferenceManager
 ) : ObjectDefinitionBuilder<T>() {
-    private val properties = mutableListOf<Object.Property<T, *>>()
 
     override fun inferFromStructure() {
         val fields = kClass.declaredMemberProperties
 
-        properties.addAll(
+        definition.internalProperties.addAll(
             fields.mapNotNull {
                 it.property(inferenceManager)
             }
@@ -225,11 +241,11 @@ private class StandardObjectBuilder<T>(
     }
 
     override fun <V> property(name: String, type: KType, documentation: String?, getter: T.() -> V) {
-        properties.add(Object.Property(name, documentation, inferenceManager.infer(type), getter))
+        definition.internalProperties.add(Object.Property(name, documentation, inferenceManager.infer(type), getter))
     }
 
     fun build(): Object<T> {
-        return Object(name, properties, documentation)
+        return definition
     }
 }
 private class StandardEnumBuilder<T>(

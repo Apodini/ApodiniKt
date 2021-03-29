@@ -92,9 +92,12 @@ class Enum<T> internal constructor(
 
 class Object<T> internal constructor(
     val name: String,
-    val properties: Iterable<Property<T, *>>,
     documentation: String? = null
 ) : TypeDefinition<T>(documentation) {
+    internal val internalProperties = mutableListOf<Property<T, *>>()
+
+    val properties: Collection<Property<T, *>>
+        get() = internalProperties
 
     class Property<Source, T>(
         val name: String,

@@ -1,23 +1,25 @@
 package de.tum.`in`.ase.apodini.model
 
-import de.tum.`in`.ase.apodini.Component
-import de.tum.`in`.ase.apodini.ComponentBuilder
-import de.tum.`in`.ase.apodini.Handler
-import de.tum.`in`.ase.apodini.WebService
+import de.tum.`in`.ase.apodini.*
 import de.tum.`in`.ase.apodini.configuration.ConfigurationBuilder
 import de.tum.`in`.ase.apodini.environment.EnvironmentBuilder
 import de.tum.`in`.ase.apodini.environment.EnvironmentStore
+import de.tum.`in`.ase.apodini.environment.extend
 import de.tum.`in`.ase.apodini.environment.override
 import de.tum.`in`.ase.apodini.exporter.Exporter
+import de.tum.`in`.ase.apodini.internal.*
 import de.tum.`in`.ase.apodini.internal.ComponentVisitor
 import de.tum.`in`.ase.apodini.internal.InternalComponent
+import de.tum.`in`.ase.apodini.internal.ModifiedComponent
 import de.tum.`in`.ase.apodini.internal.PropertyCollector
 import de.tum.`in`.ase.apodini.internal.RequestInjectable
-import de.tum.`in`.ase.apodini.internal.reflection.traverse
 import de.tum.`in`.ase.apodini.properties.Parameter
 import de.tum.`in`.ase.apodini.properties.options.OptionSet
 import de.tum.`in`.ase.apodini.properties.options.default
 import de.tum.`in`.ase.apodini.internal.reflection.TypeDefinitionInferenceManager
+import de.tum.`in`.ase.apodini.internal.reflection.traverse
+import de.tum.`in`.ase.apodini.modifiers.ModifiableComponent
+import de.tum.`in`.ase.apodini.modifiers.Modifier
 import de.tum.`in`.ase.apodini.types.Documented
 import java.util.*
 import kotlin.reflect.KType
@@ -31,8 +33,11 @@ internal fun WebService.semanticModel(): SemanticModel {
         configurationBuilder.exporters,
         configurationBuilder.environmentStore
     ).also { semanticModel ->
-        val componentBuilder = ComponentBuilderCursor(semanticModel)
+        val componentBuilder = ComponentBuilderCursor()
         componentBuilder()
+        with(componentBuilder) {
+            semanticModel.inject()
+        }
     }
 }
 
@@ -50,52 +55,155 @@ private class StandardConfigurationBuilder : ConfigurationBuilder {
     }
 }
 
-private class ComponentBuilderCursor(val semanticModel: SemanticModel) : ComponentVisitor() {
+private interface InternalModifiableComponent : ModifiableComponent<InternalModifiableComponent> {
+    fun SemanticModel.inject()
+}
+
+private class ComponentBuilderCursor(
+    initialPath: List<SemanticModel.PathComponent> = emptyList(),
+    initialEnvironment: EnvironmentStore = EnvironmentStore.empty
+) : ComponentVisitor() {
     val inferenceManager = TypeDefinitionInferenceManager()
-    private var current: StandardComponentBuilder = StandardComponentBuilder(this, emptyList())
+    val components = mutableListOf<InternalModifiableComponent>()
+    private var current: StandardComponentBuilder = StandardComponentBuilder(this, initialPath, initialEnvironment)
 
     override fun enterGroup(kind: Group) {
+        val environment = when (kind) {
+            is Group.Environment -> kind.store.extend(current.environment)
+            else -> current.environment
+        }
+
         val path = when (kind) {
-            Group.Environment -> TODO()
+            is Group.Environment -> null
             is Group.Named -> SemanticModel.PathComponent.StringPathComponent(kind.name)
             is Group.Parameter -> SemanticModel.PathComponent.ParameterPathComponent(kind.parameter)
         }
 
-        current = StandardComponentBuilder(this, current.path + path, current)
+        val pathList = listOfNotNull(path)
+
+        current = StandardComponentBuilder(this, current.path + pathList, environment, current)
     }
 
     override fun exitGroup() {
         current = current.parent ?: current
     }
 
-    override fun add(component: Component) {
-        current.add(component)
+    override fun add(component: Component): ModifiableComponent<*> {
+        return current.add(component)
     }
 
-    override fun <T> add(handler: Handler<T>, returnType: KType) {
-        current.add(handler, returnType)
+    override fun <T> add(handler: Handler<T>, returnType: KType): ModifiableComponent<*> {
+        return current.add(handler, returnType)
+    }
+
+    fun SemanticModel.inject() {
+        components.forEach { component ->
+            with (component) {
+                inject()
+            }
+        }
     }
 }
 
 private class StandardComponentBuilder(
     val cursor: ComponentBuilderCursor,
     val path: List<SemanticModel.PathComponent>,
+    val environment: EnvironmentStore,
     val parent: StandardComponentBuilder? = null
 ) : ComponentBuilder() {
-    public override fun add(component: Component) {
-        if (component is InternalComponent) {
-            val internal: InternalComponent = component
+    public override fun add(component: Component) : ModifiableComponent<*> {
+        return ComponentModifiableComponent(path, environment, component).also { cursor.components.add(it) }
+    }
+
+    override fun <T> add(handler: Handler<T>, returnType: KType): ModifiableComponent<*> {
+        if (handler is ModifiedHandler<T>) {
+            return HandlerModifiableComponent(
+                path,
+                environment,
+                handler.handler,
+                returnType,
+                cursor.inferenceManager,
+                handler.modifiers
+            ).also { cursor.components.add(it) }
+        }
+
+        return HandlerModifiableComponent(
+            path,
+            environment,
+            handler,
+            returnType,
+            cursor.inferenceManager
+        ).also { cursor.components.add(it) }
+    }
+}
+
+
+private class ComponentModifiableComponent(
+    val path: List<SemanticModel.PathComponent>,
+    val environment: EnvironmentStore,
+    val component: Component
+) : InternalModifiableComponent {
+    private val modifiers = mutableListOf<Modifier>()
+
+    override fun modify(modifier: Modifier): InternalModifiableComponent {
+        modifiers.add(modifier)
+        return this
+    }
+
+    override fun SemanticModel.inject() {
+        val cursor = ComponentBuilderCursor(path, environment)
+        val modified = modifiers.fold(component) { acc, modifier -> ModifiedComponent(acc, modifier) }
+
+        if (modified is InternalComponent) {
+            val internal: InternalComponent = modified
             with (internal) {
                 cursor.visit()
             }
         } else {
-            with(component) {
+            with(modified) {
                 cursor()
             }
         }
+
+        with(cursor) {
+            inject()
+        }
+    }
+}
+
+private class HandlerModifiableComponent<T>(
+    val path: List<SemanticModel.PathComponent>,
+    val environment: EnvironmentStore,
+    val handler: Handler<T>,
+    val returnType: KType,
+    val inferenceManager: TypeDefinitionInferenceManager,
+    modifiers: List<Modifier> = emptyList()
+) : InternalModifiableComponent {
+    private val modifiers = mutableListOf(*(modifiers.toTypedArray()))
+
+    override fun modify(modifier: Modifier): InternalModifiableComponent {
+        modifiers.add(modifier)
+        return this
     }
 
-    override fun <T> add(handler: Handler<T>, returnType: KType) {
+    override fun SemanticModel.inject() {
+        if (modifiers.isNotEmpty()) {
+            val cursor = ComponentBuilderCursor(path, environment)
+            val modified = modifiers.fold(HandlerWrapper(handler, returnType) as Component) { acc, modifier ->
+                ModifiedComponent(acc, modifier)
+            }
+
+            with(modified) {
+                cursor()
+            }
+
+            with(cursor) {
+                inject()
+            }
+
+            return
+        }
+
         val documentation = handler::class.findAnnotation<Documented>()?.documentation
 
         val parameters = ParameterCollector()
@@ -109,16 +217,16 @@ private class StandardComponentBuilder(
             .build()
 
         val endpoint = SemanticModel.Endpoint(
-            semanticModel = cursor.semanticModel,
+            semanticModel = this,
             path = path,
-            typeDefinition = cursor.inferenceManager.infer(returnType),
+            typeDefinition = inferenceManager.infer(returnType),
             handler = handler,
             documentation = documentation,
-            environment = EnvironmentStore.empty,
+            environment = environment,
             parameters = parameters
         )
 
-        cursor.semanticModel.internalEndpoints.add(endpoint)
+        internalEndpoints.add(endpoint)
     }
 }
 
