@@ -295,15 +295,3 @@ private fun <Source, T> KCallable<T>.property(inferenceManager: TypeDefinitionIn
         getter = { this@property.call(this) }
     )
 }
-
-private inline fun <reified T : Annotation> Iterable<Annotation>.contains(): Boolean {
-    val type = T::class
-    return any { type.isInstance(it) }
-}
-
-private inline fun <reified T : Annotation> Iterable<Annotation>.annotation(): T? {
-    forEach { annotation ->
-        (annotation as? T)?.let { return it }
-    }
-    return null
-}

@@ -1,6 +1,7 @@
 package de.tum.`in`.ase.apodini.properties
 
 import de.tum.`in`.ase.apodini.properties.options.http
+import de.tum.`in`.ase.apodini.types.MirroredName
 import kotlin.reflect.KProperty
 
 fun pathParameter(
@@ -15,6 +16,7 @@ fun pathParameter(
 }
 
 data class PathParameter internal constructor(
+    @MirroredName
     internal val parameter: Parameter<String>
 ): DynamicProperty {
     operator fun getValue(thisRef: Any?, property: KProperty<*>): String {

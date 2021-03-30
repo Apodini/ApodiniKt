@@ -5,6 +5,7 @@ import de.tum.`in`.ase.apodini.internal.RequestInjectable
 import de.tum.`in`.ase.apodini.properties.options.OptionSet
 import de.tum.`in`.ase.apodini.properties.options.OptionsBuilder
 import de.tum.`in`.ase.apodini.request.Request
+import de.tum.`in`.ase.apodini.types.MirroredName
 import java.util.*
 import kotlin.reflect.KProperty
 import kotlin.reflect.KType
@@ -32,6 +33,7 @@ class Parameter<T> internal constructor(
     type: KType,
     options: OptionSet<Parameter<T>>
 ): DynamicProperty {
+    @delegate:MirroredName
     private val value by ParameterBox(name, type, options)
 
     operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
