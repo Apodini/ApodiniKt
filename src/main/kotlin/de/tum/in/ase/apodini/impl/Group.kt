@@ -17,7 +17,7 @@ fun ComponentBuilder.group(vararg names: String, init: ComponentBuilder.() -> Un
 
 private fun ComponentBuilder.group(names: Collection<String>, init: ComponentBuilder.() -> Unit): ModifiableComponent<*> {
     return if (names.isEmpty()) {
-        +EmptyKindGroup(init)
+        +Component(init)
     } else {
         group(names.first()) {
             group(names.drop(1), init)
@@ -106,14 +106,6 @@ fun ComponentBuilder.group(c0: PathParameter, c1: PathParameter, c2: PathParamet
         group(c2) {
             init()
         }
-    }
-}
-
-private class EmptyKindGroup(
-    private val init: ComponentBuilder.() -> Unit
-) : Component {
-    override fun ComponentBuilder.invoke() {
-        init()
     }
 }
 
