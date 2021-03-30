@@ -16,7 +16,7 @@ object PrintExporter : Exporter {
                 appendLine("Exporters:")
                 indent {
                     model.exporters.forEach { exporter ->
-                        appendLine("$exporter")
+                        appendLine(exporter::class.simpleName!!)
                     }
                 }
 
@@ -24,7 +24,7 @@ object PrintExporter : Exporter {
                     appendLine("Environment:")
                     indent {
                         model.globalEnvironment.keys.forEach { key ->
-                            appendLine("$key = ${model.globalEnvironment[key]!!}")
+                            appendLine("${key::class.simpleName!!} = ${model.globalEnvironment[key]!!}")
                         }
                     }
                 }
@@ -46,7 +46,7 @@ object PrintExporter : Exporter {
             }
 
             appendLine()
-            appendLine("Implementation: ${endpoint.handler::class.qualifiedName!!}")
+            appendLine("Implementation: ${endpoint.handler::class.simpleName!!}")
             if (endpoint.parameters.isNotEmpty()) {
                 appendLine("Parameters:")
                 indent {
@@ -63,7 +63,7 @@ object PrintExporter : Exporter {
                                 val keys = parameter.options.keys as Set<OptionKey<Parameter<*>, *>>
 
                                 keys.forEach { key ->
-                                    appendLine("$key = ${parameter.options[key]!!}")
+                                    appendLine("${key::class.simpleName!!} = ${parameter.options[key]!!}")
                                 }
                             }
                             appendLine()
@@ -78,7 +78,7 @@ object PrintExporter : Exporter {
                 appendLine("Environment:")
                 indent {
                     endpoint.environment.keys.forEach { key ->
-                        appendLine("$key = ${endpoint.environment[key]!!}")
+                        appendLine("${key::class.simpleName!!} = ${endpoint.environment[key]!!}")
                     }
                 }
             }
