@@ -54,6 +54,12 @@ class SemanticModel internal constructor(
     ) {
         private val parentPath by lazy { path.reversed().drop(1).reversed() }
 
+        val operation by lazy {
+            with(environment) {
+                operation()
+            }
+        }
+
         val parent by lazy {
             semanticModel.endpoints.firstOrNull { it.path == parentPath }
         }
