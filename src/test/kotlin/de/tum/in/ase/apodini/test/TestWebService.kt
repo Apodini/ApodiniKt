@@ -5,10 +5,10 @@ import de.tum.`in`.ase.apodini.configuration.ConfigurationBuilder
 import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.environment.EnvironmentKeys
 import de.tum.`in`.ase.apodini.environment.request
-import de.tum.`in`.ase.apodini.exporter.RESTExporter
 import de.tum.`in`.ase.apodini.impl.text
 import de.tum.`in`.ase.apodini.impl.group
 import de.tum.`in`.ase.apodini.logging.logger
+import de.tum.`in`.ase.apodini.model.operation
 import de.tum.`in`.ase.apodini.modifiers.withEnvironment
 import de.tum.`in`.ase.apodini.properties.*
 import de.tum.`in`.ase.apodini.properties.options.default
@@ -55,6 +55,13 @@ object TestWebService : WebService {
 
         group("greeting") {
             +Greeter()
+        }
+
+        group("message") {
+            +MessageUpdater()
+                .operation {
+                    update
+                }
         }
     }
 
@@ -172,6 +179,15 @@ class Greeter: Handler<String> {
     override suspend fun CoroutineContext.compute(): String {
         logger.debug("Received Secret: $secret")
         return "Hello, $name"
+    }
+}
+
+private var message = "Hello, World"
+class MessageUpdater : Handler<String> {
+    val newValue by parameter<String>()
+
+    override suspend fun CoroutineContext.compute(): String {
+        return message.also { message = newValue }
     }
 }
 
