@@ -23,13 +23,13 @@ inline fun <reified T> parameter(
 internal fun <T> parameter(
     name: String? = null,
     type: KType,
-    init: OptionsBuilder<Parameter<T>>.() -> Unit = {}
+    init: OptionsBuilder<Parameter<T>>.() -> Unit
 ): Parameter<T> {
     return Parameter(name, type, OptionSet(init))
 }
 
 class Parameter<T> internal constructor(
-    val name: String?,
+    name: String?,
     type: KType,
     options: OptionSet<Parameter<T>>
 ): DynamicProperty {
@@ -42,7 +42,7 @@ class Parameter<T> internal constructor(
 }
 
 private class ParameterBox<T>(
-    val name: String?,
+    private val name: String?,
     private val type: KType,
     private val options: OptionSet<Parameter<T>>
 ): RequestInjectable {

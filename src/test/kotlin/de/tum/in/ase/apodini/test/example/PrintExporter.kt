@@ -149,7 +149,7 @@ object PrintExporter : Exporter {
     private fun StringBuilder.path(path: Iterable<SemanticModel.PathComponent>) {
         val current = path.firstOrNull() ?: return
         when (current) {
-            is SemanticModel.PathComponent.ParameterPathComponent -> appendLine("/:${current.parameter.parameter.name ?: "$"}")
+            is SemanticModel.PathComponent.ParameterPathComponent -> appendLine("/{:}")
             is SemanticModel.PathComponent.StringPathComponent -> appendLine("/${current.value}")
         }
 

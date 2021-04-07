@@ -353,10 +353,128 @@ internal class SemanticModelBuilderTest : TestCase() {
         assertEquals(child2.path.last(), SemanticModel.PathComponent.StringPathComponent("child2"))
         assertEquals(child2.parent, parent)
     }
+
+    fun testAllTheGroupPermutations() {
+        val param0 = pathParameter()
+        val param1 = pathParameter()
+        val param2 = pathParameter()
+
+        assertEquals(
+            semanticModel {
+                group {
+                    text("hello")
+                }
+            }.endpoints.first().path,
+            emptyList<SemanticModel.PathComponent>()
+        )
+
+        assertEquals(
+            semanticModel {
+                group("one", "two") {
+                    text("hello")
+                }
+            }.endpoints.first().path,
+            listOf<SemanticModel.PathComponent>(
+                SemanticModel.PathComponent.StringPathComponent("one"),
+                SemanticModel.PathComponent.StringPathComponent("two"),
+            )
+        )
+
+        assertEquals(
+            semanticModel {
+                group(param0, "one", "two") {
+                    text("hello")
+                }
+            }.endpoints.first().path,
+            listOf(
+                SemanticModel.PathComponent.ParameterPathComponent(param0),
+                SemanticModel.PathComponent.StringPathComponent("one"),
+                SemanticModel.PathComponent.StringPathComponent("two"),
+            )
+        )
+
+        assertEquals(
+            semanticModel {
+                group("one", param0, "two") {
+                    text("hello")
+                }
+            }.endpoints.first().path,
+            listOf(
+                SemanticModel.PathComponent.StringPathComponent("one"),
+                SemanticModel.PathComponent.ParameterPathComponent(param0),
+                SemanticModel.PathComponent.StringPathComponent("two"),
+            )
+        )
+
+        assertEquals(
+            semanticModel {
+                group("one", "two", param0) {
+                    text("hello")
+                }
+            }.endpoints.first().path,
+            listOf(
+                SemanticModel.PathComponent.StringPathComponent("one"),
+                SemanticModel.PathComponent.StringPathComponent("two"),
+                SemanticModel.PathComponent.ParameterPathComponent(param0),
+            )
+        )
+
+        assertEquals(
+            semanticModel {
+                group(param0, param1,"one") {
+                    text("hello")
+                }
+            }.endpoints.first().path,
+            listOf(
+                SemanticModel.PathComponent.ParameterPathComponent(param0),
+                SemanticModel.PathComponent.ParameterPathComponent(param1),
+                SemanticModel.PathComponent.StringPathComponent("one"),
+            )
+        )
+
+        assertEquals(
+            semanticModel {
+                group(param0,"one", param1) {
+                    text("hello")
+                }
+            }.endpoints.first().path,
+            listOf(
+                SemanticModel.PathComponent.ParameterPathComponent(param0),
+                SemanticModel.PathComponent.StringPathComponent("one"),
+                SemanticModel.PathComponent.ParameterPathComponent(param1),
+            )
+        )
+
+        assertEquals(
+            semanticModel {
+                group("one", param0, param1) {
+                    text("hello")
+                }
+            }.endpoints.first().path,
+            listOf(
+                SemanticModel.PathComponent.StringPathComponent("one"),
+                SemanticModel.PathComponent.ParameterPathComponent(param0),
+                SemanticModel.PathComponent.ParameterPathComponent(param1),
+            )
+        )
+
+        assertEquals(
+            semanticModel {
+                group(param0, param1, param2) {
+                    text("hello")
+                }
+            }.endpoints.first().path,
+            listOf<SemanticModel.PathComponent>(
+                SemanticModel.PathComponent.ParameterPathComponent(param0),
+                SemanticModel.PathComponent.ParameterPathComponent(param1),
+                SemanticModel.PathComponent.ParameterPathComponent(param2),
+            )
+        )
+    }
 }
 
 private val boxField: KProperty1<Parameter<*>, *> by lazy {
-    Parameter::class.memberProperties.toList()[1].also { it.isAccessible = true }
+    Parameter::class.memberProperties.toList()[0].also { it.isAccessible = true }
 }
 
 private val Parameter<*>.id: UUID

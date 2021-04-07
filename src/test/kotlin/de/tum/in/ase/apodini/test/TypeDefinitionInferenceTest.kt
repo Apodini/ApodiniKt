@@ -3,6 +3,7 @@ package de.tum.`in`.ase.apodini.test
 import de.tum.`in`.ase.apodini.internal.reflection.TypeDefinitionInferenceManager
 import de.tum.`in`.ase.apodini.types.*
 import de.tum.`in`.ase.apodini.types.Array
+import de.tum.`in`.ase.apodini.types.Enum
 import junit.framework.TestCase
 import kotlin.reflect.typeOf
 
@@ -13,6 +14,7 @@ class TypeDefinitionInferenceTest : TestCase() {
         val manager = TypeDefinitionInferenceManager()
         when (val definition = manager.infer<Foo>(typeOf<Foo>())) {
             is Object -> {
+                assertEquals(definition.name, "Foo")
                 val properties = definition.properties.toTypedArray()
                 assertEquals(properties.size, 2)
 
@@ -29,6 +31,8 @@ class TypeDefinitionInferenceTest : TestCase() {
     fun testDocumentation() {
         val manager = TypeDefinitionInferenceManager()
         val definition = manager.infer<Foo2>(typeOf<Foo2>()) as Object<*>
+        assertEquals(definition.name, "Foo2")
+
         val properties = definition.properties.toTypedArray()
         assertEquals(definition.documentation, "An example type")
         assertEquals(properties.size, 1)
@@ -37,11 +41,13 @@ class TypeDefinitionInferenceTest : TestCase() {
 
     fun testHidden() {
         val manager = TypeDefinitionInferenceManager()
-        val definition = manager.infer<Foo2>(typeOf<Foo2>()) as Object<*>
+        val definition = manager.infer<Foo3>(typeOf<Foo3>()) as Object<*>
+        assertEquals(definition.name, "Foo3")
+
         val properties = definition.properties.toTypedArray()
-        assertEquals(definition.documentation, "An example type")
         assertEquals(properties.size, 1)
-        assertEquals(properties[0].documentation, "Example Property")
+        assertEquals(properties[0].name, "bar")
+        assertEquals(properties[0].definition, StringType)
     }
 
     fun testRecursiveObject() {
@@ -109,8 +115,22 @@ class TypeDefinitionInferenceTest : TestCase() {
 
     fun testStringArray() {
         val manager = TypeDefinitionInferenceManager()
-        val arrayDefinition = manager.infer<kotlin.Array<String>>(typeOf<List<String>>()) as Array<*>
+        val arrayDefinition = manager.infer<kotlin.Array<String>>(typeOf<kotlin.Array<String>>()) as Array<*>
         assertEquals(arrayDefinition.definition, StringType)
+    }
+
+    fun testEnum() {
+        val manager = TypeDefinitionInferenceManager()
+        val definition = manager.infer<TestEnum>(typeOf<TestEnum>()) as Enum<TestEnum>
+        assertEquals(definition.name, "TestEnum")
+        assertEquals(definition.cases.toList(), listOf("One", "Two", "Three"))
+    }
+
+    fun testCustomScalar() {
+        val manager = TypeDefinitionInferenceManager()
+        val definition = manager.infer<URL>(typeOf<URL>()) as Scalar<*, *>
+        assertEquals(definition.name, "URL")
+        assertEquals(definition.kind, StringType)
     }
 
 }
@@ -128,6 +148,16 @@ private class Foo3(
     @Hidden
     val baz: Int
 )
+
+enum class TestEnum {
+    One, Two, Three
+}
+
+private class URL(val urlString: String) : CustomType<URL> {
+    override fun TypeDefinitionBuilder.definition(): TypeDefinition<URL> {
+        return string { urlString }
+    }
+}
 
 private class Post(val text: String, val author: User)
 private class User(val name: String, val posts: Iterable<Post>)

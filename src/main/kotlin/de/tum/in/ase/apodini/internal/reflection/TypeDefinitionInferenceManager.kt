@@ -1,6 +1,7 @@
 package de.tum.`in`.ase.apodini.internal.reflection
 
 import de.tum.`in`.ase.apodini.types.*
+import de.tum.`in`.ase.apodini.types.contains
 import de.tum.`in`.ase.apodini.types.Enum
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
@@ -107,8 +108,10 @@ internal class TypeDefinitionInferenceManager {
             val caseFields = javaClass.declaredFields.filter { it.isEnumConstant }
             return builder.enum {
                 caseFields.forEach { field ->
+                    val wasAccessible = field.isAccessible
+                    field.isAccessible = true
                     @Suppress("UNCHECKED_CAST")
-                    case(field.name, field.get(null) as T)
+                    case(field.name, field.get(null) as T).also { field.isAccessible = wasAccessible }
                 }
             }
         }
@@ -126,6 +129,10 @@ private interface InferenceManagerReference {
 private fun Class<*>.iterableElement(arguments: List<KType?>): KType? {
     if (this == Iterable::class.java) {
         return arguments.first()
+    }
+
+    if (isArray) {
+        return arguments.firstOrNull() ?: DummyKType(componentType)
     }
 
     val parameters = mapOf(*typeParameters.map { it.name }.zip(arguments).toTypedArray())
@@ -170,10 +177,10 @@ data class DummyKType(val type: Type) : KType {
 }
 
 private class StandardTypeDefinitionBuilder(
-    val defaultName: String,
-    val defaultDocumentation: String?,
-    val kClass: KClass<*>,
-    val inferenceManagerReference: InferenceManagerReference
+    private val defaultName: String,
+    private val defaultDocumentation: String?,
+    private val kClass: KClass<*>,
+    private val inferenceManagerReference: InferenceManagerReference
 ) : TypeDefinitionBuilder {
     override fun <T> `object`(
         name: String?,

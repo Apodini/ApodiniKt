@@ -8,6 +8,7 @@ import de.tum.`in`.ase.apodini.logging.logger
 import de.tum.`in`.ase.apodini.modifiers.withEnvironment
 import de.tum.`in`.ase.apodini.properties.environment
 import de.tum.`in`.ase.apodini.properties.parameter
+import de.tum.`in`.ase.apodini.properties.pathParameter
 import de.tum.`in`.ase.apodini.test.example.secret
 import de.tum.`in`.ase.apodini.test.utils.handle
 import junit.framework.TestCase
@@ -63,7 +64,24 @@ class RequestHandlingTest : TestCase() {
         assertEquals(result, "Hello, World!")
     }
 
-    fun testHandleEnvironment() {
+    fun testHandlePathParameter() {
+        val pathParameter = pathParameter()
+        val result = handle("id" to "1234") {
+            group("test", pathParameter) {
+                +object : Handler<String> {
+                    val id by pathParameter
+
+                    override suspend fun CoroutineScope.compute(): String {
+                        return "Hello from $id"
+                    }
+                }
+            }
+        }
+
+        assertEquals(result, "Hello from 1234")
+    }
+
+    fun testHandleSetEnvironment() {
         val result = handle {
             group("test") {
                 +object : Handler<String> {
@@ -77,6 +95,22 @@ class RequestHandlingTest : TestCase() {
         }
 
         assertEquals(result, "Secret = 42. Don't tell anyone")
+    }
+
+    fun testHandleNotEnvironment() {
+        val result = handle {
+            group("test") {
+                +object : Handler<String> {
+                    val someSecret by environment { secret }
+
+                    override suspend fun CoroutineScope.compute(): String {
+                        return "Secret = $someSecret. Don't tell anyone"
+                    }
+                }
+            }
+        }
+
+        assertEquals(result, "Secret = 0. Don't tell anyone")
     }
 
     fun testThrowingAnExceptionIsPropagated() {

@@ -35,7 +35,7 @@ internal object DoubleType : ScalarType<Double>("Double") {
 class Scalar<T, Encoded> internal constructor(
     name: String? = null,
     val kind: ScalarType<Encoded>,
-    documentation: String? = null,
+    documentation: String?,
     private val extract: T.() -> Encoded
 ) : TypeDefinition<T>(documentation) {
     val name = name ?: kind
@@ -50,32 +50,6 @@ class Scalar<T, Encoded> internal constructor(
     fun erased(): Scalar<T, Encoded> {
         return Scalar(null, kind, documentation, extract)
     }
-
-    companion object {
-        fun <T> string(
-            name: String? = null,
-            documentation: String? = null,
-            extract: (T) -> String
-        ): Scalar<T, String> = Scalar(name, StringType, documentation, extract)
-
-        fun <T> int(
-            name: String? = null,
-            documentation: String? = null,
-            extract: (T) -> Int
-        ): Scalar<T, Int> = Scalar(name, IntType, documentation, extract)
-
-        fun <T> boolean(
-            name: String? = null,
-            documentation: String? = null,
-            extract: (T) -> Boolean
-        ): Scalar<T, Boolean> = Scalar(name, BooleanType, documentation, extract)
-
-        fun <T> double(
-            name: String? = null,
-            documentation: String? = null,
-            extract: (T) -> Double
-        ): Scalar<T, Double> = Scalar(name, DoubleType, documentation, extract)
-    }
 }
 
 class Enum<T> internal constructor(
@@ -83,7 +57,7 @@ class Enum<T> internal constructor(
     val cases: Iterable<String>,
     internal val caseNameFactory: (T) -> String,
     internal val caseFactory: (String) -> T,
-    documentation: String? = null
+    documentation: String?
 ) : TypeDefinition<T>(documentation) {
     override fun Encoder.encode(value: T) {
         encodeString(caseNameFactory(value))
@@ -92,7 +66,7 @@ class Enum<T> internal constructor(
 
 class Object<T> internal constructor(
     val name: String,
-    documentation: String? = null
+    documentation: String?
 ) : TypeDefinition<T>(documentation) {
     internal val internalProperties = mutableListOf<Property<T, *>>()
 
@@ -127,6 +101,7 @@ class Object<T> internal constructor(
 
 data class Array<T> internal constructor(val definition: TypeDefinition<T>) : TypeDefinition<Iterable<T>>(null) {
     override fun Encoder.encode(value: Iterable<T>) {
+        // TODO: handle Arrays that are not iterable
         unKeyed {
             value.forEach { element ->
                 encode {
