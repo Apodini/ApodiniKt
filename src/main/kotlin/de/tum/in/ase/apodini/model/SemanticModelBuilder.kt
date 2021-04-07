@@ -61,9 +61,9 @@ private interface InternalModifiableComponent : ModifiableComponent<InternalModi
 
 private class ComponentBuilderCursor(
     initialPath: List<SemanticModel.PathComponent> = emptyList(),
-    initialEnvironment: EnvironmentStore = EnvironmentStore.empty
+    initialEnvironment: EnvironmentStore = EnvironmentStore.empty,
+    val inferenceManager: TypeDefinitionInferenceManager = TypeDefinitionInferenceManager()
 ) : ComponentVisitor() {
-    val inferenceManager = TypeDefinitionInferenceManager()
     val components = mutableListOf<InternalModifiableComponent>()
     private var current: StandardComponentBuilder = StandardComponentBuilder(this, initialPath, initialEnvironment)
 
@@ -112,7 +112,7 @@ private class StandardComponentBuilder(
     val parent: StandardComponentBuilder? = null
 ) : ComponentBuilder() {
     public override fun add(component: Component) : ModifiableComponent<*> {
-        return ComponentModifiableComponent(path, environment, component).also { cursor.components.add(it) }
+        return ComponentModifiableComponent(path, environment, component, cursor.inferenceManager).also { cursor.components.add(it) }
     }
 
     override fun <T> add(handler: Handler<T>, returnType: KType): ModifiableComponent<*> {
@@ -141,7 +141,8 @@ private class StandardComponentBuilder(
 private class ComponentModifiableComponent(
     val path: List<SemanticModel.PathComponent>,
     val environment: EnvironmentStore,
-    val component: Component
+    val component: Component,
+    val inferenceManager: TypeDefinitionInferenceManager
 ) : InternalModifiableComponent {
     private val modifiers = mutableListOf<Modifier>()
 
@@ -151,7 +152,7 @@ private class ComponentModifiableComponent(
     }
 
     override fun SemanticModel.inject() {
-        val cursor = ComponentBuilderCursor(path, environment)
+        val cursor = ComponentBuilderCursor(path, environment, inferenceManager)
         val modified = modifiers.fold(component) { acc, modifier -> ModifiedComponent(acc, modifier) }
 
         if (modified is InternalComponent) {
@@ -188,7 +189,7 @@ private class HandlerModifiableComponent<T>(
 
     override fun SemanticModel.inject() {
         if (modifiers.isNotEmpty()) {
-            val cursor = ComponentBuilderCursor(path, environment)
+            val cursor = ComponentBuilderCursor(path, environment, inferenceManager)
             val modified = modifiers.fold(HandlerWrapper(handler, returnType) as Component) { acc, modifier ->
                 ModifiedComponent(acc, modifier)
             }
