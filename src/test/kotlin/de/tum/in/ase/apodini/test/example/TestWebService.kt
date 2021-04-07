@@ -1,4 +1,4 @@
-package de.tum.`in`.ase.apodini.test
+package de.tum.`in`.ase.apodini.test.example
 
 import de.tum.`in`.ase.apodini.*
 import de.tum.`in`.ase.apodini.configuration.ConfigurationBuilder
@@ -16,7 +16,6 @@ import de.tum.`in`.ase.apodini.properties.options.http
 import de.tum.`in`.ase.apodini.types.*
 import kotlinx.coroutines.CoroutineScope
 import java.lang.IllegalArgumentException
-import kotlin.coroutines.CoroutineContext
 
 fun main() {
     TestWebService.run()
@@ -185,7 +184,7 @@ class Greeter: Handler<String> {
 
 private var message = "Hello, World"
 class MessageUpdater : Handler<String> {
-    val newValue by parameter<String>()
+    private val newValue by parameter<String>()
 
     override suspend fun CoroutineScope.compute(): String {
         return message.also { message = newValue }

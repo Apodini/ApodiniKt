@@ -1,4 +1,4 @@
-package de.tum.`in`.ase.apodini.test
+package de.tum.`in`.ase.apodini.test.utils
 
 import de.tum.`in`.ase.apodini.ComponentBuilder
 import de.tum.`in`.ase.apodini.Handler

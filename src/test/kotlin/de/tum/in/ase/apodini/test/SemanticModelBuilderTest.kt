@@ -1,4 +1,4 @@
-package de.tum.`in`.ase.apodini.model
+package de.tum.`in`.ase.apodini.test
 
 import de.tum.`in`.ase.apodini.Component
 import de.tum.`in`.ase.apodini.ComponentBuilder
@@ -7,6 +7,9 @@ import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.exporter.RESTExporter
 import de.tum.`in`.ase.apodini.impl.group
 import de.tum.`in`.ase.apodini.impl.text
+import de.tum.`in`.ase.apodini.model.Operation
+import de.tum.`in`.ase.apodini.model.SemanticModel
+import de.tum.`in`.ase.apodini.model.operation
 import de.tum.`in`.ase.apodini.modifiers.withEnvironment
 import de.tum.`in`.ase.apodini.properties.Parameter
 import de.tum.`in`.ase.apodini.properties.options.HTTPParameterMode
@@ -15,7 +18,7 @@ import de.tum.`in`.ase.apodini.properties.options.default
 import de.tum.`in`.ase.apodini.properties.options.http
 import de.tum.`in`.ase.apodini.properties.parameter
 import de.tum.`in`.ase.apodini.properties.pathParameter
-import de.tum.`in`.ase.apodini.test.semanticModel
+import de.tum.`in`.ase.apodini.test.utils.semanticModel
 import de.tum.`in`.ase.apodini.types.Documented
 import de.tum.`in`.ase.apodini.types.Nullable
 import de.tum.`in`.ase.apodini.types.StringType

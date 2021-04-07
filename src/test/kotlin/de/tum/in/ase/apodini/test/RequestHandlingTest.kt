@@ -1,4 +1,4 @@
-package de.tum.`in`.ase.apodini.model
+package de.tum.`in`.ase.apodini.test
 
 import de.tum.`in`.ase.apodini.Handler
 import de.tum.`in`.ase.apodini.impl.group
@@ -8,12 +8,11 @@ import de.tum.`in`.ase.apodini.logging.logger
 import de.tum.`in`.ase.apodini.modifiers.withEnvironment
 import de.tum.`in`.ase.apodini.properties.environment
 import de.tum.`in`.ase.apodini.properties.parameter
-import de.tum.`in`.ase.apodini.test.handle
-import de.tum.`in`.ase.apodini.test.secret
+import de.tum.`in`.ase.apodini.test.example.secret
+import de.tum.`in`.ase.apodini.test.utils.handle
 import junit.framework.TestCase
 import kotlinx.coroutines.CoroutineScope
 import java.lang.IllegalArgumentException
-import kotlin.math.log
 import kotlin.test.assertFailsWith
 
 class RequestHandlingTest : TestCase() {

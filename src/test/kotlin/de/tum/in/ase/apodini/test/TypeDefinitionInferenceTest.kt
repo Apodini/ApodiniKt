@@ -1,4 +1,4 @@
-package de.tum.`in`.ase.apodini.model
+package de.tum.`in`.ase.apodini.test
 
 import de.tum.`in`.ase.apodini.internal.reflection.TypeDefinitionInferenceManager
 import de.tum.`in`.ase.apodini.types.*

@@ -1,4 +1,4 @@
-package de.tum.`in`.ase.apodini.test
+package de.tum.`in`.ase.apodini.test.example
 
 import de.tum.`in`.ase.apodini.exporter.Exporter
 import de.tum.`in`.ase.apodini.model.SemanticModel
