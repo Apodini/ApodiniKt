@@ -3,6 +3,7 @@ package de.tum.`in`.ase.apodini.model
 import de.tum.`in`.ase.apodini.ComponentBuilder
 import de.tum.`in`.ase.apodini.Handler
 import de.tum.`in`.ase.apodini.WebService
+import de.tum.`in`.ase.apodini.impl.group
 import de.tum.`in`.ase.apodini.impl.text
 import de.tum.`in`.ase.apodini.types.Nullable
 import de.tum.`in`.ase.apodini.types.StringType
@@ -30,6 +31,20 @@ internal class SemanticModelBuilderTest : TestCase() {
                 override suspend fun CoroutineContext.compute(): String? {
                     return null
                 }
+            }
+        }
+        assertEquals(semanticModel.endpoints.count(), 1)
+
+        val endpoint = semanticModel.endpoints.first()
+        assertEquals(endpoint.path.count(), 0)
+        assertEquals(endpoint.parameters.count(), 0)
+        assertEquals(endpoint.typeDefinition, Nullable(StringType))
+    }
+
+    fun testGroup() {
+        val semanticModel = semanticModel {
+            group("greeting") {
+                text("Hello World")
             }
         }
         assertEquals(semanticModel.endpoints.count(), 1)
