@@ -11,7 +11,6 @@ import de.tum.`in`.ase.apodini.logging.logger
 import de.tum.`in`.ase.apodini.properties.DynamicProperty
 import de.tum.`in`.ase.apodini.properties.Parameter as ParameterProperty
 import de.tum.`in`.ase.apodini.properties.PathParameter
-import de.tum.`in`.ase.apodini.properties.environment
 import de.tum.`in`.ase.apodini.properties.options.OptionSet
 import de.tum.`in`.ase.apodini.request.Request
 import de.tum.`in`.ase.apodini.types.Encoder
@@ -19,7 +18,6 @@ import de.tum.`in`.ase.apodini.types.TypeDefinition
 import kotlinx.coroutines.CoroutineScope
 import java.lang.Exception
 import java.util.*
-import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KType
 
 class SemanticModel internal constructor(

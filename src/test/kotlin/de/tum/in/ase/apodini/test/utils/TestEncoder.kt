@@ -26,11 +26,13 @@ class TestEncoder : Encoder {
     }
 
     override fun keyed(init: Encoder.KeyedContainer.() -> Unit) {
+        @Suppress("UNCHECKED_CAST")
         value = TestKeyedEncoder((value as? MutableMap<String, Any?>) ?: mutableMapOf()).also(init).map
     }
 
     override fun unKeyed(init: Encoder.UnKeyedContainer.() -> Unit) {
-        value = TestUnkeyedEncoder((value as? MutableList<Any?>) ?: mutableListOf()).also(init).list
+        @Suppress("UNCHECKED_CAST")
+        value = TestUnKeyedEncoder((value as? MutableList<Any?>) ?: mutableListOf()).also(init).list
     }
 }
 
@@ -40,7 +42,7 @@ private class TestKeyedEncoder(val map: MutableMap<String, Any?>) : Encoder.Keye
     }
 }
 
-private class TestUnkeyedEncoder(val list: MutableList<Any?>) : Encoder.UnKeyedContainer {
+private class TestUnKeyedEncoder(val list: MutableList<Any?>) : Encoder.UnKeyedContainer {
     override fun encode(init: Encoder.() -> Unit) {
         list.add(TestEncoder().also(init).value)
     }
