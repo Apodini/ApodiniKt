@@ -14,6 +14,7 @@ import de.tum.`in`.ase.apodini.properties.*
 import de.tum.`in`.ase.apodini.properties.options.default
 import de.tum.`in`.ase.apodini.properties.options.http
 import de.tum.`in`.ase.apodini.types.*
+import kotlinx.coroutines.CoroutineScope
 import java.lang.IllegalArgumentException
 import kotlin.coroutines.CoroutineContext
 
@@ -127,7 +128,7 @@ class CurrentlyAuthenticatedUser : Handler<User?> {
     private val authenticated by authenticated(User)
     private val logger by environment { logger }
 
-    override suspend fun CoroutineContext.compute(): User? {
+    override suspend fun CoroutineScope.compute(): User? {
         if (authenticated == null) {
             logger.debug("User is not authenticated")
         }
@@ -144,7 +145,7 @@ class GreeterForUser(id: PathParameter) : Handler<String> {
     private val request by environment { request }
     private val logger by environment { logger }
 
-    override suspend fun CoroutineContext.compute(): String {
+    override suspend fun CoroutineScope.compute(): String {
         logger.info("Trying out logging")
         logger.debug {
             "Received id $id from $request"
@@ -158,7 +159,7 @@ class GreeterForUser(id: PathParameter) : Handler<String> {
 class PostsForUser(id: PathParameter) : Handler<String> {
     private val id by id
 
-    override suspend fun CoroutineContext.compute(): String {
+    override suspend fun CoroutineScope.compute(): String {
         return "Posts from user $id"
     }
 }
@@ -176,7 +177,7 @@ class Greeter: Handler<String> {
         default("World")
     }
 
-    override suspend fun CoroutineContext.compute(): String {
+    override suspend fun CoroutineScope.compute(): String {
         logger.debug("Received Secret: $secret")
         return "Hello, $name"
     }
@@ -186,7 +187,7 @@ private var message = "Hello, World"
 class MessageUpdater : Handler<String> {
     val newValue by parameter<String>()
 
-    override suspend fun CoroutineContext.compute(): String {
+    override suspend fun CoroutineScope.compute(): String {
         return message.also { message = newValue }
     }
 }

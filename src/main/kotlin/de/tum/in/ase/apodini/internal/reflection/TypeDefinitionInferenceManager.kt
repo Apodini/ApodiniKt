@@ -226,8 +226,8 @@ private class StandardTypeDefinitionBuilder(
 
 private class StandardObjectBuilder<T>(
     private val definition: Object<T>,
-    val kClass: KClass<*>,
-    val inferenceManager: TypeDefinitionInferenceManager
+    private val kClass: KClass<*>,
+    private val inferenceManager: TypeDefinitionInferenceManager
 ) : ObjectDefinitionBuilder<T>() {
 
     override fun inferFromStructure() {
@@ -249,11 +249,11 @@ private class StandardObjectBuilder<T>(
     }
 }
 private class StandardEnumBuilder<T>(
-    val name: String,
-    val documentation: String?
+    private val name: String,
+    private val documentation: String?
 ) : EnumDefinitionBuilder<T> {
-    val caseNameToCase = mutableMapOf<String, T>()
-    val caseToCaseName = mutableMapOf<T, String>()
+    private val caseNameToCase = mutableMapOf<String, T>()
+    private val caseToCaseName = mutableMapOf<T, String>()
 
     override fun case(name: String, value: T) {
         caseNameToCase[name] = value

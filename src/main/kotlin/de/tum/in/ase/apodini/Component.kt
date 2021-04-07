@@ -22,7 +22,7 @@ interface Component: ModifiableComponent<Component> {
 
         @PublishedApi
         internal operator fun <T> invoke(handler: Handler<T>, returnType: KType): Component {
-            return HandlerWrapper<T>(handler, returnType)
+            return HandlerWrapper(handler, returnType)
         }
 
         @ExperimentalStdlibApi

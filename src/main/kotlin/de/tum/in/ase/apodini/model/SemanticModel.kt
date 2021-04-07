@@ -16,6 +16,7 @@ import de.tum.`in`.ase.apodini.properties.options.OptionSet
 import de.tum.`in`.ase.apodini.request.Request
 import de.tum.`in`.ase.apodini.types.Encoder
 import de.tum.`in`.ase.apodini.types.TypeDefinition
+import kotlinx.coroutines.CoroutineScope
 import java.lang.Exception
 import java.util.*
 import kotlin.coroutines.CoroutineContext
@@ -69,33 +70,34 @@ class SemanticModel internal constructor(
         }
 
         val neighbors by lazy {
-            semanticModel.endpoints.filter { it.parentPath == parentPath }
+            semanticModel.endpoints.filter { it.parentPath == parentPath && it != this }
         }
 
-        suspend operator fun Request.invoke(encoder: Encoder) {
+        suspend operator fun invoke(request: Request, encoder: Encoder) {
             val newInstance = this@Endpoint.handler.shallowCopy()
-            val request = DelegatedRequest(this, newInstance, semanticModel.globalEnvironment, environment)
+            val delegatedRequest = DelegatedRequest(request, newInstance, semanticModel.globalEnvironment, environment)
 
             try {
                 newInstance.modify<RequestInjectable> { injectable ->
-                    injectable.shallowCopy().apply { inject(request) }
+                    injectable.shallowCopy().apply { inject(delegatedRequest) }
                 }
                 newInstance.traverseSuspended<DynamicProperty> { property ->
                     property.update()
                 }
 
-                val value = with(newInstance) { compute() }
+                val value = with(newInstance) { delegatedRequest.compute() }
                 with(typeDefinition) {
                     encoder.encode(value)
                 }
             } catch (exception: Exception) {
-                request.logger.error {
+                delegatedRequest.logger.error {
                     """
                         Failed to respond due to exception: ${exception.localizedMessage}
                         
                         ${exception.stackTraceToString()}
                     """.trimIndent()
                 }
+                throw exception
             }
         }
     }
@@ -117,7 +119,7 @@ private class DelegatedRequest(
                 handler
             }
         }),
-    CoroutineContext by request,
+    CoroutineScope by request,
     Request {
 
     override fun <T> parameter(id: UUID): T {

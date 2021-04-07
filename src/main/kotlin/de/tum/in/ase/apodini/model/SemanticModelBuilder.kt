@@ -106,7 +106,7 @@ private class ComponentBuilderCursor(
 }
 
 private class StandardComponentBuilder(
-    val cursor: ComponentBuilderCursor,
+    private val cursor: ComponentBuilderCursor,
     val path: List<SemanticModel.PathComponent>,
     val environment: EnvironmentStore,
     val parent: StandardComponentBuilder? = null
@@ -139,10 +139,10 @@ private class StandardComponentBuilder(
 
 
 private class ComponentModifiableComponent(
-    val path: List<SemanticModel.PathComponent>,
-    val environment: EnvironmentStore,
-    val component: Component,
-    val inferenceManager: TypeDefinitionInferenceManager
+    private val path: List<SemanticModel.PathComponent>,
+    private val environment: EnvironmentStore,
+    private val component: Component,
+    private val inferenceManager: TypeDefinitionInferenceManager
 ) : InternalModifiableComponent {
     private val modifiers = mutableListOf<Modifier>()
 
@@ -173,11 +173,11 @@ private class ComponentModifiableComponent(
 }
 
 private class HandlerModifiableComponent<T>(
-    val path: List<SemanticModel.PathComponent>,
-    val environment: EnvironmentStore,
-    val handler: Handler<T>,
-    val returnType: KType,
-    val inferenceManager: TypeDefinitionInferenceManager,
+    private val path: List<SemanticModel.PathComponent>,
+    private val environment: EnvironmentStore,
+    private val handler: Handler<T>,
+    private val returnType: KType,
+    private val inferenceManager: TypeDefinitionInferenceManager,
     modifiers: List<Modifier> = emptyList()
 ) : InternalModifiableComponent {
     private val modifiers = mutableListOf(*(modifiers.toTypedArray()))

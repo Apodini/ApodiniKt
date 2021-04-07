@@ -12,11 +12,13 @@ internal suspend inline fun <reified T> Any.traverseSuspended(noinline block: su
     traverseSuspended(typeOf<T>(), block)
 }
 
-private suspend fun <T> Any.traverseSuspended(lookedUpType: KType, block: suspend (T) -> Unit) {
+internal suspend fun <T> Any.traverseSuspended(lookedUpType: KType, block: suspend (T) -> Unit) {
     val type = this::class.java
     val concreteLookedUpType = lookedUpType.classifier as KClass<*>
 
-    for (field in type.fields) {
+    for (field in type.declaredFields) {
+        if (field.name == "\$\$delegatedProperties") continue
+
         val wasAccessible = field.isAccessible
         field.isAccessible = true
         val value = field.get(this)
@@ -40,6 +42,8 @@ private fun <T> Any.traverse(lookedUpType: KType, block: (String, T) -> Unit) {
     val concreteLookedUpType = lookedUpType.classifier as KClass<*>
 
     for (field in type.declaredFields) {
+        if (field.name == "\$\$delegatedProperties") continue
+
         val wasAccessible = field.isAccessible
         field.isAccessible = true
         val value = field.get(this)
@@ -58,6 +62,8 @@ private fun <T> Any.traverse(name: String, lookedUpType: KType, block: (String, 
     val concreteLookedUpType = lookedUpType.classifier as KClass<*>
 
     for (field in type.declaredFields) {
+        if (field.name == "\$\$delegatedProperties") continue
+
         val wasAccessible = field.isAccessible
         field.isAccessible = true
         val value = field.get(this)

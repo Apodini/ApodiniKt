@@ -115,7 +115,7 @@ class TypeDefinitionInferenceTest : TestCase() {
 
 }
 
-private class Foo(val bar: String, val baz: Int)
+internal class Foo(val bar: String, val baz: Int)
 
 @Documented("An example type")
 private class Foo2(

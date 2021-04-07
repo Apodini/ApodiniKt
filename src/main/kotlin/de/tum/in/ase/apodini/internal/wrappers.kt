@@ -4,7 +4,7 @@ import de.tum.`in`.ase.apodini.Component
 import de.tum.`in`.ase.apodini.ComponentBuilder
 import de.tum.`in`.ase.apodini.Handler
 import de.tum.`in`.ase.apodini.modifiers.Modifier
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineScope
 import kotlin.reflect.KType
 
 internal class HandlerWrapper<T>(private val handler: Handler<T>, private val returnType: KType) : Component {
@@ -22,7 +22,7 @@ internal class ModifiedComponent(private val component: Component, private val m
 }
 
 internal class ModifiedHandler<T>(val handler: Handler<T>, val modifiers: List<Modifier>) : Handler<T> {
-    override suspend fun CoroutineContext.compute(): T {
+    override suspend fun CoroutineScope.compute(): T {
         throw IllegalArgumentException(
             "Unexpected call to `compute` to a handler wrapped in modifiers"
         )

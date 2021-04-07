@@ -10,14 +10,16 @@ internal fun <T> T.shallowCopy(): T {
 private fun <T : Any> T.nonNullShallowCopy(): T {
     val type = this::class
 
-    if (type.isData) {
-        val copy = type.members.first { it.name == "copy" }
-        @Suppress("UNCHECKED_CAST")
-        return copy.call(this) as T
-    }
+//    if (type.isData) {
+//        val copy = type.members.first { it.name == "copy" }
+//        @Suppress("UNCHECKED_CAST")
+//        return copy.call(this) as T
+//    }
 
     return createInstance(type).also { newObject ->
-        for (field in type.java.fields) {
+        for (field in type.java.declaredFields) {
+            if (field.name == "\$\$delegatedProperties")
+                continue
             val wasAccessible = field.isAccessible
             field.isAccessible = true
             field.set(newObject, field.get(this))

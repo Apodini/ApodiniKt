@@ -14,7 +14,7 @@ private fun <T> Any.modify(lookedUpType: KType, block: (T) -> T) {
     val type = this::class.java
     val concreteLookedUpType = lookedUpType.classifier as KClass<*>
 
-    for (field in type.fields) {
+    for (field in type.declaredFields) {
         val wasAccessible = field.isAccessible
         field.isAccessible = true
         val value = field.get(this)
