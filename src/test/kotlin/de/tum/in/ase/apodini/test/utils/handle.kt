@@ -3,7 +3,6 @@ package de.tum.`in`.ase.apodini.test.utils
 import de.tum.`in`.ase.apodini.ComponentBuilder
 import de.tum.`in`.ase.apodini.environment.EnvironmentStore
 import de.tum.`in`.ase.apodini.request.Request
-import junit.framework.TestCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import java.util.*
@@ -14,7 +13,6 @@ internal fun handle(vararg parameters: Pair<String, Any?>, init: ComponentBuilde
 
 internal fun handle(parameters: Map<String, Any?>, init: ComponentBuilder.() -> Unit): Any? {
     val semanticModel = semanticModel(init)
-    TestCase.assertEquals(semanticModel.endpoints.count(), 1)
 
     val endpoint = semanticModel.endpoints.first()
     return runBlocking {
@@ -26,7 +24,8 @@ internal fun handle(parameters: Map<String, Any?>, init: ComponentBuilder.() -> 
         }
 
         val encoder = TestEncoder()
-        endpoint(mockRequest, encoder)
+        val result = endpoint(mockRequest)
+        result.encode(encoder)
         encoder.value
     }
 }

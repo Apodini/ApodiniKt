@@ -3,10 +3,11 @@ package de.tum.`in`.ase.apodini.types
 sealed class TypeDefinition<T>(
     val documentation: String?
 ) {
+    abstract val name: String?
     abstract fun Encoder.encode(value: T)
 }
 
-sealed class ScalarType<T>(val name: String) : TypeDefinition<T>(null)
+sealed class ScalarType<T>(override val name: String) : TypeDefinition<T>(null)
 
 internal object StringType : ScalarType<String>("String") {
     override fun Encoder.encode(value: String) {
@@ -38,7 +39,7 @@ class Scalar<T, Encoded> internal constructor(
     documentation: String?,
     private val extract: T.() -> Encoded
 ) : TypeDefinition<T>(documentation) {
-    val name = name ?: kind
+    override val name = name ?: kind.name
 
     override fun Encoder.encode(value: T) {
         val encoded = value.extract()
@@ -53,7 +54,7 @@ class Scalar<T, Encoded> internal constructor(
 }
 
 class Enum<T> internal constructor(
-    val name: String,
+    override val name: String,
     val cases: Iterable<String>,
     internal val caseNameFactory: (T) -> String,
     internal val caseFactory: (String) -> T,
@@ -65,7 +66,7 @@ class Enum<T> internal constructor(
 }
 
 class Object<T> internal constructor(
-    val name: String,
+    override val name: String,
     documentation: String?
 ) : TypeDefinition<T>(documentation) {
     internal val internalProperties = mutableListOf<Property<T, *>>()
@@ -100,6 +101,8 @@ class Object<T> internal constructor(
 }
 
 data class Array<T> internal constructor(val definition: TypeDefinition<T>) : TypeDefinition<Iterable<T>>(null) {
+    override val name: String? = null
+
     override fun Encoder.encode(value: Iterable<T>) {
         // TODO: handle Arrays that are not iterable
         unKeyed {
@@ -115,6 +118,8 @@ data class Array<T> internal constructor(val definition: TypeDefinition<T>) : Ty
 }
 
 data class Nullable<T> internal constructor(val definition: TypeDefinition<T>) : TypeDefinition<T?>(null) {
+    override val name: String? = null
+
     override fun Encoder.encode(value: T?) {
         value?.let { unwrapped ->
             with(definition) {

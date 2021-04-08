@@ -7,14 +7,14 @@ import de.tum.`in`.ase.apodini.internal.RequestInjectable
 import de.tum.`in`.ase.apodini.internal.reflection.modify
 import de.tum.`in`.ase.apodini.internal.reflection.shallowCopy
 import de.tum.`in`.ase.apodini.internal.reflection.traverseSuspended
+import de.tum.`in`.ase.apodini.internal.toCamelCase
 import de.tum.`in`.ase.apodini.logging.logger
 import de.tum.`in`.ase.apodini.properties.DynamicProperty
 import de.tum.`in`.ase.apodini.properties.Parameter as ParameterProperty
 import de.tum.`in`.ase.apodini.properties.PathParameter
 import de.tum.`in`.ase.apodini.properties.options.OptionSet
 import de.tum.`in`.ase.apodini.request.Request
-import de.tum.`in`.ase.apodini.types.Encoder
-import de.tum.`in`.ase.apodini.types.TypeDefinition
+import de.tum.`in`.ase.apodini.types.*
 import kotlinx.coroutines.CoroutineScope
 import java.lang.Exception
 import java.util.*
@@ -27,7 +27,7 @@ class SemanticModel internal constructor(
     internal val internalEndpoints = mutableListOf<Endpoint<*>>()
 
     val endpoints: List<Endpoint<*>>
-        get() = internalEndpoints
+        get() = internalEndpoints.toList()
 
     sealed class PathComponent {
         data class StringPathComponent internal constructor(val value: String) : PathComponent()
@@ -42,6 +42,30 @@ class SemanticModel internal constructor(
         val options: OptionSet<ParameterProperty<T>>
     )
 
+    data class Result<T> internal constructor(
+        val value: T,
+        val definition: TypeDefinition<T>,
+        val linkToSelf: Link<*>,
+        val links: List<Link<*>>
+    ) {
+        data class Link<T> internal constructor(
+            val name: String,
+            val endpoint: Endpoint<T>,
+            val parameterAssignment: List<ParameterAssignment<*>>
+        )
+
+        data class ParameterAssignment<T> internal constructor(
+            val parameter: Parameter<T>,
+            val value: T
+        )
+
+        fun encode(encoder: Encoder) {
+            with(definition) {
+                encoder.encode(value)
+            }
+        }
+    }
+
     data class Endpoint<T> internal constructor(
         private val semanticModel: SemanticModel,
         val path: List<PathComponent>,
@@ -51,6 +75,11 @@ class SemanticModel internal constructor(
         val environment: EnvironmentStore,
         val parameters: List<Parameter<*>>,
     ) {
+        data class Link<T> internal constructor(
+            val name: String,
+            val destination: Endpoint<T>
+        )
+
         private val parentPath by lazy { path.reversed().drop(1).reversed() }
 
         val operation by lazy {
@@ -71,7 +100,21 @@ class SemanticModel internal constructor(
             semanticModel.endpoints.filter { it.parentPath == parentPath && it != this }
         }
 
-        suspend operator fun invoke(request: Request, encoder: Encoder) {
+        val links by lazy {
+            linkedEndpoints.map { it.link() }
+        }
+
+        private val selfEndpoint by lazy {
+            // TODO: Handle inheritance relationships
+            relation(this).partiallyAppliedEndpointFromRequest("self")!!
+        }
+
+        private val linkedEndpoints by lazy {
+            // TODO: Handle links specified by object type definition
+            children.filter { it.operation == operation }.mapNotNull { relation(it).partiallyAppliedEndpointFromRequest() }
+        }
+
+        suspend operator fun invoke(request: Request): Result<T> {
             val newInstance = this@Endpoint.handler.shallowCopy()
             val delegatedRequest = DelegatedRequest(request, newInstance, semanticModel.globalEnvironment, environment)
 
@@ -84,9 +127,9 @@ class SemanticModel internal constructor(
                 }
 
                 val value = with(newInstance) { delegatedRequest.compute() }
-                with(typeDefinition) {
-                    encoder.encode(value)
-                }
+                val selfLink = selfEndpoint.link(value, request)
+                val links = linkedEndpoints.map { it.link(value, request) }
+                return Result(value, typeDefinition, selfLink, links)
             } catch (exception: Exception) {
                 delegatedRequest.logger.error {
                     """
@@ -123,4 +166,66 @@ private class DelegatedRequest(
     override fun <T> parameter(id: UUID): T {
         return request.parameter(id)
     }
+}
+
+private data class EndpointRelation<A, B>(
+    val source: SemanticModel.Endpoint<A>,
+    val destination: SemanticModel.Endpoint<B>
+)
+
+private data class PartiallyAppliedEndpoint<A, B>(
+    private val name: String,
+    private val destination: SemanticModel.Endpoint<B>,
+    private val parameterAssignment: (A, Request) -> List<SemanticModel.Result.ParameterAssignment<*>>
+) {
+    fun link(value: A, request: Request): SemanticModel.Result.Link<B> {
+        return SemanticModel.Result.Link(
+            "test",
+            destination,
+            parameterAssignment(value, request)
+        )
+    }
+
+    fun link(): SemanticModel.Endpoint.Link<B> {
+        return SemanticModel.Endpoint.Link(name, destination)
+    }
+}
+
+private fun <A, B> SemanticModel.Endpoint<A>.relation(destination: SemanticModel.Endpoint<B>): EndpointRelation<A, B>  {
+    return EndpointRelation(this, destination)
+}
+
+private fun <A, B> EndpointRelation<A, B>.partiallyAppliedEndpointFromRequest(hardCodedName: String? = null): PartiallyAppliedEndpoint<A, B>?  {
+    val pathDifference = destination.path.removePrefix(source.path)
+    val name = hardCodedName
+        ?: pathDifference.lastOrNull<SemanticModel.PathComponent, SemanticModel.PathComponent.StringPathComponent>()?.value?.toCamelCase()
+        ?: destination.handler::class.simpleName?.replace("Handler", "")?.toCamelCase()
+        ?: destination.typeDefinition.name?.toCamelCase()
+        ?: return null
+
+    return PartiallyAppliedEndpoint(name, destination) { _, request ->
+        destination.parameters.mapNotNull { it.assigned(request) }
+    }
+}
+
+private inline fun <T, reified A : T> Iterable<T>.lastOrNull(): A? {
+    return lastOrNull { it is A }?.let { it as A }
+}
+
+private fun <T> SemanticModel.Parameter<T>.assigned(request: Request): SemanticModel.Result.ParameterAssignment<T>? {
+    return try {
+        SemanticModel.Result.ParameterAssignment(this, request.parameter(id))
+    } catch (exception: Exception) {
+        null
+    }
+}
+
+private fun <T> List<T>.removePrefix(other: List<T>): List<T> {
+    if (other.isEmpty() || isEmpty()) return this
+
+    if (other.first() == first()) {
+        return drop(1).removePrefix(other.drop(1))
+    }
+
+    return this
 }

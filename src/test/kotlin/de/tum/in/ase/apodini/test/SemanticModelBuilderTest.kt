@@ -326,6 +326,33 @@ internal class SemanticModelBuilderTest : TestCase() {
         assertEquals(child2.path.last(), SemanticModel.PathComponent.StringPathComponent("child2"))
     }
 
+    fun testLinks() {
+        val semanticModel = semanticModel {
+            group("group") {
+                text("parent")
+                group("child1") {
+                    text("child1")
+                }
+                group("child2") {
+                    text("child2")
+                }
+            }
+        }
+        assertEquals(semanticModel.endpoints.count(), 3)
+
+        val parent = semanticModel.endpoints[0]
+        assertEquals(parent.path.count(), 1)
+        assertEquals(parent.path.last(), SemanticModel.PathComponent.StringPathComponent("group"))
+        assertEquals(parent.links.count(), 2)
+
+        val child1 = parent.links[0]
+        val child2 = parent.links[1]
+        assertEquals(child1.name, "child1")
+        assertEquals(child1.destination, semanticModel.endpoints[1])
+        assertEquals(child2.name, "child2")
+        assertEquals(child2.destination, semanticModel.endpoints[2])
+    }
+
     fun testEndpointParent() {
         val semanticModel = semanticModel {
             group("group") {
