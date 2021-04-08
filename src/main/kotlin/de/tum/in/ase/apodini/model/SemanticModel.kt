@@ -11,7 +11,6 @@ import de.tum.`in`.ase.apodini.internal.toCamelCase
 import de.tum.`in`.ase.apodini.logging.logger
 import de.tum.`in`.ase.apodini.properties.DynamicProperty
 import de.tum.`in`.ase.apodini.properties.Parameter as ParameterProperty
-import de.tum.`in`.ase.apodini.properties.PathParameter
 import de.tum.`in`.ase.apodini.properties.options.OptionSet
 import de.tum.`in`.ase.apodini.request.Request
 import de.tum.`in`.ase.apodini.types.*
@@ -31,7 +30,7 @@ class SemanticModel internal constructor(
 
     sealed class PathComponent {
         data class StringPathComponent internal constructor(val value: String) : PathComponent()
-        data class ParameterPathComponent internal constructor(val parameter: PathParameter) : PathComponent()
+        data class ParameterPathComponent internal constructor(val parameter: Parameter<String>) : PathComponent()
     }
 
     data class Parameter<T> internal constructor(
@@ -180,7 +179,7 @@ private data class PartiallyAppliedEndpoint<A, B>(
 ) {
     fun link(value: A, request: Request): SemanticModel.Result.Link<B> {
         return SemanticModel.Result.Link(
-            "test",
+            name,
             destination,
             parameterAssignment(value, request)
         )

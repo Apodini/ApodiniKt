@@ -7,6 +7,7 @@ import de.tum.`in`.ase.apodini.environment.EnvironmentStore
 import de.tum.`in`.ase.apodini.environment.extend
 import de.tum.`in`.ase.apodini.environment.override
 import de.tum.`in`.ase.apodini.exporter.Exporter
+import de.tum.`in`.ase.apodini.exporter.httpOption
 import de.tum.`in`.ase.apodini.internal.*
 import de.tum.`in`.ase.apodini.internal.ComponentVisitor
 import de.tum.`in`.ase.apodini.internal.InternalComponent
@@ -20,6 +21,8 @@ import de.tum.`in`.ase.apodini.internal.reflection.TypeDefinitionInferenceManage
 import de.tum.`in`.ase.apodini.internal.reflection.traverse
 import de.tum.`in`.ase.apodini.modifiers.ModifiableComponent
 import de.tum.`in`.ase.apodini.modifiers.Modifier
+import de.tum.`in`.ase.apodini.properties.PathParameter
+import de.tum.`in`.ase.apodini.properties.options.HTTPParameterMode
 import de.tum.`in`.ase.apodini.types.Documented
 import java.util.*
 import kotlin.reflect.KType
@@ -76,7 +79,7 @@ private class ComponentBuilderCursor(
         val path = when (kind) {
             is Group.Environment -> null
             is Group.Named -> SemanticModel.PathComponent.StringPathComponent(kind.name)
-            is Group.Parameter -> SemanticModel.PathComponent.ParameterPathComponent(kind.parameter)
+            is Group.Parameter -> SemanticModel.PathComponent.ParameterPathComponent(kind.parameter.asSemanticModelParameter())
         }
 
         val pathList = listOfNotNull(path)
@@ -217,9 +220,38 @@ private class HandlerModifiableComponent<T>(
             }
             .build()
 
+        val path = path.map { component ->
+            when (component) {
+                is SemanticModel.PathComponent.StringPathComponent -> component
+                is SemanticModel.PathComponent.ParameterPathComponent -> SemanticModel.PathComponent.ParameterPathComponent(
+                    parameters
+                        .firstOrNull { it.id == component.parameter.id }
+                        ?.let { param ->
+                            @Suppress("UNCHECKED_CAST")
+                            param as SemanticModel.Parameter<String>
+                        }
+                        ?: component.parameter
+                )
+            }
+        }
+
+        val setOfAlreadyUsedParameters = path
+            .mapNotNull { it as? SemanticModel.PathComponent.ParameterPathComponent }
+            .map { it.parameter.id }
+            .toSet()
+
+        val newParameters = parameters
+            .filter { !setOfAlreadyUsedParameters.contains(it.id) && it.httpOption == HTTPParameterMode.path }
+            .map { parameter ->
+                @Suppress("UNCHECKED_CAST")
+                SemanticModel.PathComponent.ParameterPathComponent(
+                    parameter as SemanticModel.Parameter<String>
+                )
+            }
+
         val endpoint = SemanticModel.Endpoint(
             semanticModel = this,
-            path = path,
+            path = path + newParameters,
             typeDefinition = inferenceManager.infer(returnType),
             handler = handler,
             documentation = documentation,
@@ -229,6 +261,20 @@ private class HandlerModifiableComponent<T>(
 
         internalEndpoints.add(endpoint)
     }
+}
+
+private fun PathParameter.asSemanticModelParameter(): SemanticModel.Parameter<String> {
+    @Suppress("UNCHECKED_CAST")
+    return ParameterCollector()
+        .also { collector ->
+            this.traverse<RequestInjectable> { name, injectable ->
+                with(injectable) {
+                    collector.collect(name)
+                }
+            }
+        }
+        .build()
+        .first() as SemanticModel.Parameter<String>
 }
 
 private class ParameterCollector : PropertyCollector {

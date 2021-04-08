@@ -5,6 +5,7 @@ import de.tum.`in`.ase.apodini.configuration.ConfigurationBuilder
 import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.environment.EnvironmentKeys
 import de.tum.`in`.ase.apodini.environment.request
+import de.tum.`in`.ase.apodini.exporter.RESTExporter
 import de.tum.`in`.ase.apodini.impl.text
 import de.tum.`in`.ase.apodini.impl.group
 import de.tum.`in`.ase.apodini.logging.logger
@@ -67,6 +68,7 @@ object TestWebService : WebService {
 
     override fun ConfigurationBuilder.configure() {
         use(PrintExporter)
+        use(RESTExporter(port = 8080))
 
         environment {
             secret {

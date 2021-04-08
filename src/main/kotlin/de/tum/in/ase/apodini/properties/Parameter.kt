@@ -33,8 +33,10 @@ class Parameter<T> internal constructor(
     type: KType,
     options: OptionSet<Parameter<T>>
 ): DynamicProperty {
+    internal val id = UUID.randomUUID()
+
     @delegate:MirroredName
-    private val value by ParameterBox(name, type, options)
+    private val value by ParameterBox(id, name, type, options)
 
     operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
         return value
@@ -42,11 +44,11 @@ class Parameter<T> internal constructor(
 }
 
 private class ParameterBox<T>(
+    private val id: UUID,
     private val name: String?,
     private val type: KType,
     private val options: OptionSet<Parameter<T>>
 ): RequestInjectable {
-    private val id = UUID.randomUUID()
     private var value: T? = null
 
     override fun PropertyCollector.collect(propertyName: String) {

@@ -2,6 +2,7 @@ package de.tum.`in`.ase.apodini.properties
 
 import de.tum.`in`.ase.apodini.properties.options.http
 import de.tum.`in`.ase.apodini.types.MirroredName
+import java.util.*
 import kotlin.reflect.KProperty
 
 fun pathParameter(
