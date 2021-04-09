@@ -88,8 +88,8 @@ class RESTExporter(
                     HTTPParameterMode.Query -> ParameterDecodingStrategy.Query
                     HTTPParameterMode.Header -> ParameterDecodingStrategy.Header
                     null -> when (endpoint.operation) {
-                        Operation.Create, Operation.Update -> ParameterDecodingStrategy.Query
-                        Operation.Read, Operation.Delete -> ParameterDecodingStrategy.Body(!multipleBodyParams)
+                        Operation.Create, Operation.Update -> ParameterDecodingStrategy.Body(!multipleBodyParams)
+                        Operation.Read, Operation.Delete -> ParameterDecodingStrategy.Query
                     }
                 }
                 parameters[it.id] = it to strategy
