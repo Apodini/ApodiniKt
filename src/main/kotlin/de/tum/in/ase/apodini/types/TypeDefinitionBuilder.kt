@@ -54,6 +54,37 @@ abstract class ObjectDefinitionBuilder<T> {
     abstract fun inferFromStructure()
 
     @PublishedApi
+    internal abstract fun <V : Any, O : String?> inherits(type: KType, getter: T.() -> O)
+
+    @JvmName("inherits")
+    @TypeDefinitionDsl
+    @OptIn(ExperimentalStdlibApi::class)
+    inline fun <reified V : Any> inherits(noinline getter: T.() -> String) {
+        inherits<V, String>(typeOf<V>(), getter)
+    }
+
+    @TypeDefinitionDsl
+    @OptIn(ExperimentalStdlibApi::class)
+    inline fun <reified V : Any> inheritsOptional(noinline getter: T.() -> String?) {
+        inherits<V, String?>(typeOf<V>(), getter)
+    }
+
+    @PublishedApi
+    internal abstract fun <V : Any, O : String?> relationship(name: String? = null, type: KType, getter: T.() -> O)
+
+    @TypeDefinitionDsl
+    @OptIn(ExperimentalStdlibApi::class)
+    inline fun <reified V : Any> relationship(name: String? = null, noinline getter: T.() -> String) {
+        relationship<V, String>(name, typeOf<V>(), getter)
+    }
+
+    @TypeDefinitionDsl
+    @OptIn(ExperimentalStdlibApi::class)
+    inline fun <reified V : Any> optionalRelationship(name: String? = null, noinline getter: T.() -> String?) {
+        relationship<V, String?>(name, typeOf<V>(), getter)
+    }
+
+    @PublishedApi
     internal abstract fun <V> property(name: String, type: KType, documentation: String?, getter: T.() -> V)
 
     @TypeDefinitionDsl

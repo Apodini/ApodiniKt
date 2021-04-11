@@ -69,10 +69,23 @@ class Object<T> internal constructor(
     override val name: String,
     documentation: String?
 ) : TypeDefinition<T>(documentation) {
+    data class Relationship<A, B>(
+        val name: String?,
+        val destination: Object<B>,
+        val identifier: A.() -> String?
+    )
+
+    var inheritance: Relationship<T, *>? = null
+        internal set
+
+    internal val internalRelationships = mutableListOf<Relationship<T, *>>()
     internal val internalProperties = mutableListOf<Property<T, *>>()
 
-    val properties: Collection<Property<T, *>>
-        get() = internalProperties
+    val relationships: List<Relationship<T, *>>
+        get() = internalRelationships.toList()
+
+    val properties: List<Property<T, *>>
+        get() = internalProperties.toList()
 
     class Property<Source, T>(
         val name: String,

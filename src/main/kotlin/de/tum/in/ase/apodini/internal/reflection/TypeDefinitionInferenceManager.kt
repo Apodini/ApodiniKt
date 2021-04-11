@@ -3,12 +3,14 @@ package de.tum.`in`.ase.apodini.internal.reflection
 import de.tum.`in`.ase.apodini.types.*
 import de.tum.`in`.ase.apodini.types.contains
 import de.tum.`in`.ase.apodini.types.Enum
+import java.lang.IllegalArgumentException
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.lang.reflect.TypeVariable
 import java.util.*
 import kotlin.reflect.*
 import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.jvm.isAccessible
 
 internal class TypeDefinitionInferenceManager {
     @OptIn(ExperimentalStdlibApi::class)
@@ -247,6 +249,20 @@ private class StandardObjectBuilder<T>(
         )
     }
 
+    override fun <V : Any, O : String?> inherits(type: KType, getter: T.() -> O) {
+        val inferred = inferenceManager.infer<V>(type) as? Object<V>
+            ?: throw IllegalArgumentException("Cannot inherit from non-object type")
+
+        definition.inheritance = Object.Relationship(null, inferred, getter)
+    }
+
+    override fun <V : Any, O : String?> relationship(name: String?, type: KType, getter: T.() -> O) {
+        val inferred = inferenceManager.infer<V>(type) as? Object<V>
+            ?: throw IllegalArgumentException("Cannot point relationship to non-object type")
+
+        definition.internalRelationships.add(Object.Relationship(name, inferred, getter))
+    }
+
     override fun <V> property(name: String, type: KType, documentation: String?, getter: T.() -> V) {
         definition.internalProperties.add(Object.Property(name, documentation, inferenceManager.infer(type), getter))
     }
@@ -299,6 +315,10 @@ private fun <Source, T> KCallable<T>.property(inferenceManager: TypeDefinitionIn
         name = name,
         documentation = documentation,
         definition = inferenceManager.infer(returnType),
-        getter = { this@property.call(this) }
+        getter = {
+            val wasAccessible = this@property.isAccessible
+            this@property.isAccessible = true
+            this@property.call(this).also { this@property.isAccessible = wasAccessible }
+        }
     )
 }
