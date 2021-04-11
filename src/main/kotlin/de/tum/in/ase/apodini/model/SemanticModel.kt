@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import java.lang.Exception
 import java.util.*
 import kotlin.reflect.KType
+import kotlin.reflect.typeOf
 
 class SemanticModel internal constructor(
     val exporters: List<Exporter>,
@@ -104,13 +105,23 @@ class SemanticModel internal constructor(
         }
 
         private val selfEndpoint by lazy {
-            // TODO: Handle inheritance relationships
             relation(this).partiallyAppliedEndpointFromRequest("self")!!
         }
 
         private val linkedEndpoints by lazy {
-            // TODO: Handle links specified by object type definition
-            children.filter { it.operation == operation }.mapNotNull { relation(it).partiallyAppliedEndpointFromRequest() }
+            val fromChildren = children
+                .filter { it.operation == operation }
+                .mapNotNull { relation(it).partiallyAppliedEndpointFromRequest() }
+
+            val definition = typeDefinition.objectDefinition() ?: return@lazy fromChildren
+            val endpointsFromRelations = definition
+                .relationships
+                .mapNotNull { relationship ->
+                    @Suppress("UNCHECKED_CAST")
+                    (relationship as Object.Relationship<T, *>).partiallyApplied(semanticModel)
+                }
+
+            fromChildren + endpointsFromRelations
         }
 
         suspend operator fun invoke(request: Request): Result<T> {
@@ -126,8 +137,8 @@ class SemanticModel internal constructor(
                 }
 
                 val value = with(newInstance) { delegatedRequest.compute() }
-                val selfLink = selfEndpoint.link(value, request)
-                val links = linkedEndpoints.map { it.link(value, request) }
+                val selfLink = selfEndpoint.link(value, request)!!
+                val links = linkedEndpoints.mapNotNull { it.link(value, request) }
                 return Result(value, typeDefinition, selfLink, links)
             } catch (exception: Exception) {
                 delegatedRequest.logger.error {
@@ -140,6 +151,79 @@ class SemanticModel internal constructor(
                 throw exception
             }
         }
+    }
+}
+
+private fun <A, B> Object.Relationship<A, B>.partiallyApplied(
+    semanticModel: SemanticModel
+): PartiallyAppliedEndpoint<A, B>? {
+    return semanticModel.endpointRepresenting(destination)?.let { destinationEndpoint ->
+        PartiallyAppliedEndpoint<A, B>(
+            name ?: destination.name.toCamelCase(),
+            destinationEndpoint.endpoint
+        ) { value, request ->
+            value
+                .identifier()
+                ?.let { identifier ->
+                    destinationEndpoint.endpoint.parameters.mapNotNull { parameter ->
+                        if (parameter == destinationEndpoint.identifier) {
+                            SemanticModel.Result.ParameterAssignment(destinationEndpoint.identifier, identifier)
+                        } else {
+                            parameter.assigned(request)
+                        }
+                    }
+                }
+        }
+    }
+}
+
+private data class IdentifiedEndpoint<T>(
+    val endpoint: SemanticModel.Endpoint<T>,
+    val identifier: SemanticModel.Parameter<String>
+)
+
+@OptIn(ExperimentalStdlibApi::class)
+private val stringType = typeOf<String>()
+private val commonIdParameterNames = setOf("id", "identifier")
+
+private fun <T> SemanticModel.endpointRepresenting(type: Object<T>): IdentifiedEndpoint<T>? {
+    @Suppress("UNCHECKED_CAST")
+    val endpointsWithCorrectReturnType = endpoints
+        .filter { it.typeDefinition.objectDefinition() == type } as List<SemanticModel.Endpoint<T>>
+
+    // Get the first one that includes the name id and a string
+    endpointsWithCorrectReturnType
+        .mapNotNull { endpoint ->
+            val identifier = endpoint
+                .parameters
+                .firstOrNull { commonIdParameterNames.contains(it.name.toCamelCase()) && it.type == stringType }
+                ?: return@mapNotNull null
+
+            @Suppress("UNCHECKED_CAST")
+            IdentifiedEndpoint(endpoint, identifier as SemanticModel.Parameter<String>)
+        }
+        .minByOrNull { it.endpoint.parameters.indexOf(it.identifier) }
+        ?.let { return it }
+
+    // Get the first one where the last component in the path is an argument
+    endpointsWithCorrectReturnType
+        .mapNotNull { endpoint ->
+            val identifierComponent = endpoint.path.lastOrNull() as? SemanticModel.PathComponent.ParameterPathComponent ?: return@mapNotNull null
+            IdentifiedEndpoint(endpoint, identifierComponent.parameter)
+        }
+        .firstOrNull()
+        ?.let { return it }
+
+    // TODO: Consider more complex strategies
+
+    return null
+}
+
+private fun TypeDefinition<*>.objectDefinition(): Object<*>? {
+    return when (this) {
+        is Object -> this
+        is Nullable -> definition.objectDefinition()
+        else -> null
     }
 }
 
@@ -175,14 +259,11 @@ private data class EndpointRelation<A, B>(
 private data class PartiallyAppliedEndpoint<A, B>(
     private val name: String,
     private val destination: SemanticModel.Endpoint<B>,
-    private val parameterAssignment: (A, Request) -> List<SemanticModel.Result.ParameterAssignment<*>>
+    private val parameterAssignment: (A, Request) -> List<SemanticModel.Result.ParameterAssignment<*>>?
 ) {
-    fun link(value: A, request: Request): SemanticModel.Result.Link<B> {
-        return SemanticModel.Result.Link(
-            name,
-            destination,
-            parameterAssignment(value, request)
-        )
+    fun link(value: A, request: Request): SemanticModel.Result.Link<B>? {
+        return parameterAssignment(value, request)
+            ?.let { SemanticModel.Result.Link(name, destination, it) }
     }
 
     fun link(): SemanticModel.Endpoint.Link<B> {
