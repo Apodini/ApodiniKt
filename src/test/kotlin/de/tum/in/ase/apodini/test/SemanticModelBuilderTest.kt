@@ -12,6 +12,7 @@ import de.tum.`in`.ase.apodini.model.SemanticModel
 import de.tum.`in`.ase.apodini.model.operation
 import de.tum.`in`.ase.apodini.modifiers.withEnvironment
 import de.tum.`in`.ase.apodini.properties.Parameter
+import de.tum.`in`.ase.apodini.properties.PathParameter
 import de.tum.`in`.ase.apodini.properties.options.HTTPParameterMode
 import de.tum.`in`.ase.apodini.properties.options.OptionSet
 import de.tum.`in`.ase.apodini.properties.options.default
@@ -19,9 +20,7 @@ import de.tum.`in`.ase.apodini.properties.options.http
 import de.tum.`in`.ase.apodini.properties.parameter
 import de.tum.`in`.ase.apodini.properties.pathParameter
 import de.tum.`in`.ase.apodini.test.utils.semanticModel
-import de.tum.`in`.ase.apodini.types.Documented
-import de.tum.`in`.ase.apodini.types.Nullable
-import de.tum.`in`.ase.apodini.types.StringType
+import de.tum.`in`.ase.apodini.types.*
 import junit.framework.TestCase
 import kotlinx.coroutines.CoroutineScope
 import java.util.*
@@ -353,6 +352,44 @@ internal class SemanticModelBuilderTest : TestCase() {
         assertEquals(child2.destination, semanticModel.endpoints[2])
     }
 
+    fun testRelationshipsViaId() {
+        val personId = pathParameter()
+        val contentId = pathParameter()
+        val semanticModel = semanticModel {
+            group("person", personId) {
+                +PersonHandler(personId)
+            }
+            group("content", contentId) {
+                +ContentHandler(contentId)
+            }
+        }
+        assertEquals(semanticModel.endpoints.count(), 2)
+
+        val person = semanticModel.endpoints.first()
+        val content = semanticModel.endpoints.last()
+        assertEquals(content.links.count(), 1)
+        assertEquals(content.links.first().destination, person)
+    }
+
+    fun testRelationshipsViaPath() {
+        val personId = pathParameter()
+        val contentId = pathParameter()
+        val semanticModel = semanticModel {
+            group("person", personId) {
+                +PersonHandlerWithoutId
+            }
+            group("content", contentId) {
+                +ContentHandlerWithoutId
+            }
+        }
+        assertEquals(semanticModel.endpoints.count(), 2)
+
+        val person = semanticModel.endpoints.first()
+        val content = semanticModel.endpoints.last()
+        assertEquals(content.links.count(), 1)
+        assertEquals(content.links.first().destination, person)
+    }
+
     fun testEndpointParent() {
         val semanticModel = semanticModel {
             group("group") {
@@ -381,123 +418,92 @@ internal class SemanticModelBuilderTest : TestCase() {
         assertEquals(child2.parent, parent)
     }
 
-//    fun testAllTheGroupPermutations() {
-//        val param0 = pathParameter()
-//        val param1 = pathParameter()
-//        val param2 = pathParameter()
-//
-//        assertEquals(
-//            semanticModel {
-//                group {
-//                    text("hello")
-//                }
-//            }.endpoints.first().path,
-//            emptyList<SemanticModel.PathComponent>()
-//        )
-//
-//        assertEquals(
-//            semanticModel {
-//                group("one", "two") {
-//                    text("hello")
-//                }
-//            }.endpoints.first().path,
-//            listOf<SemanticModel.PathComponent>(
-//                SemanticModel.PathComponent.StringPathComponent("one"),
-//                SemanticModel.PathComponent.StringPathComponent("two"),
-//            )
-//        )
-//
-//        assertEquals(
-//            semanticModel {
-//                group(param0, "one", "two") {
-//                    text("hello")
-//                }
-//            }.endpoints.first().path,
-//            listOf(
-//                SemanticModel.PathComponent.ParameterPathComponent(param0),
-//                SemanticModel.PathComponent.StringPathComponent("one"),
-//                SemanticModel.PathComponent.StringPathComponent("two"),
-//            )
-//        )
-//
-//        assertEquals(
-//            semanticModel {
-//                group("one", param0, "two") {
-//                    text("hello")
-//                }
-//            }.endpoints.first().path,
-//            listOf(
-//                SemanticModel.PathComponent.StringPathComponent("one"),
-//                SemanticModel.PathComponent.ParameterPathComponent(param0),
-//                SemanticModel.PathComponent.StringPathComponent("two"),
-//            )
-//        )
-//
-//        assertEquals(
-//            semanticModel {
-//                group("one", "two", param0) {
-//                    text("hello")
-//                }
-//            }.endpoints.first().path,
-//            listOf(
-//                SemanticModel.PathComponent.StringPathComponent("one"),
-//                SemanticModel.PathComponent.StringPathComponent("two"),
-//                SemanticModel.PathComponent.ParameterPathComponent(param0),
-//            )
-//        )
-//
-//        assertEquals(
-//            semanticModel {
-//                group(param0, param1,"one") {
-//                    text("hello")
-//                }
-//            }.endpoints.first().path,
-//            listOf(
-//                SemanticModel.PathComponent.ParameterPathComponent(param0),
-//                SemanticModel.PathComponent.ParameterPathComponent(param1),
-//                SemanticModel.PathComponent.StringPathComponent("one"),
-//            )
-//        )
-//
-//        assertEquals(
-//            semanticModel {
-//                group(param0,"one", param1) {
-//                    text("hello")
-//                }
-//            }.endpoints.first().path,
-//            listOf(
-//                SemanticModel.PathComponent.ParameterPathComponent(param0),
-//                SemanticModel.PathComponent.StringPathComponent("one"),
-//                SemanticModel.PathComponent.ParameterPathComponent(param1),
-//            )
-//        )
-//
-//        assertEquals(
-//            semanticModel {
-//                group("one", param0, param1) {
-//                    text("hello")
-//                }
-//            }.endpoints.first().path,
-//            listOf(
-//                SemanticModel.PathComponent.StringPathComponent("one"),
-//                SemanticModel.PathComponent.ParameterPathComponent(param0),
-//                SemanticModel.PathComponent.ParameterPathComponent(param1),
-//            )
-//        )
-//
-//        assertEquals(
-//            semanticModel {
-//                group(param0, param1, param2) {
-//                    text("hello")
-//                }
-//            }.endpoints.first().path,
-//            listOf<SemanticModel.PathComponent>(
-//                SemanticModel.PathComponent.ParameterPathComponent(param0),
-//                SemanticModel.PathComponent.ParameterPathComponent(param1),
-//                SemanticModel.PathComponent.ParameterPathComponent(param2),
-//            )
-//        )
-//    }
+    fun testAllTheGroupPermutations() {
+        val param0 = pathParameter()
+        val param1 = pathParameter()
+        val param2 = pathParameter()
+
+        assertEquals(
+            semanticModel {
+                group {
+                    text("hello")
+                }
+            }.endpoints.first().path,
+            emptyList<SemanticModel.PathComponent>()
+        )
+
+        var path = semanticModel {
+            group("one", "two") {
+                text("hello")
+            }
+        }.endpoints.first().path
+        assertEquals(path[0], SemanticModel.PathComponent.StringPathComponent("one"))
+        assertEquals(path[1], SemanticModel.PathComponent.StringPathComponent("two"))
+
+        path = semanticModel {
+            group(param0, "one", "two") {
+                text("hello")
+            }
+        }.endpoints.first().path
+        assertEquals((path[0] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param0.parameter.id)
+        assertEquals(path[1], SemanticModel.PathComponent.StringPathComponent("one"))
+        assertEquals(path[2], SemanticModel.PathComponent.StringPathComponent("two"))
+
+        path = semanticModel {
+            group("one", param0, "two") {
+                text("hello")
+            }
+        }.endpoints.first().path
+        assertEquals(path[0], SemanticModel.PathComponent.StringPathComponent("one"))
+        assertEquals((path[1] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param0.parameter.id)
+        assertEquals(path[2], SemanticModel.PathComponent.StringPathComponent("two"))
+
+        path = semanticModel {
+            group("one", "two", param0) {
+                text("hello")
+            }
+        }.endpoints.first().path
+        assertEquals(path[0], SemanticModel.PathComponent.StringPathComponent("one"))
+        assertEquals(path[1], SemanticModel.PathComponent.StringPathComponent("two"))
+        assertEquals((path[2] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param0.parameter.id)
+
+        path = semanticModel {
+            group(param0, param1,"one") {
+                text("hello")
+            }
+        }.endpoints.first().path
+        assertEquals((path[0] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param0.parameter.id)
+        assertEquals((path[1] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param1.parameter.id)
+        assertEquals(path[2], SemanticModel.PathComponent.StringPathComponent("one"))
+
+        path = semanticModel {
+            group(param0,"one", param1) {
+                text("hello")
+            }
+        }.endpoints.first().path
+        assertEquals((path[0] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param0.parameter.id)
+        assertEquals(path[1], SemanticModel.PathComponent.StringPathComponent("one"))
+        assertEquals((path[2] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param1.parameter.id)
+
+        path = semanticModel {
+            group("one", param0, param1) {
+                text("hello")
+            }
+        }.endpoints.first().path
+        assertEquals(path[0], SemanticModel.PathComponent.StringPathComponent("one"))
+        assertEquals((path[1] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param0.parameter.id)
+        assertEquals((path[2] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param1.parameter.id)
+
+        path = semanticModel {
+            group(param0, param1, param2) {
+                text("hello")
+            }
+        }.endpoints.first().path
+
+        assertEquals((path[0] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param0.parameter.id)
+        assertEquals((path[1] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param1.parameter.id)
+        assertEquals((path[2] as SemanticModel.PathComponent.ParameterPathComponent).parameter.id, param2.parameter.id)
+    }
 }
 
 private val boxField: KProperty1<Parameter<*>, *> by lazy {
@@ -511,6 +517,46 @@ private val Parameter<*>.id: UUID
         val idField = box::class.declaredMemberProperties.first().also { it.isAccessible = true } as KCallable<UUID>
         return idField.call(box)
     }
+
+private class PersonHandler(id: PathParameter) : Handler<Person> {
+    val id by id
+
+    override suspend fun CoroutineScope.compute(): Person {
+        return Person("Test")
+    }
+}
+
+private class ContentHandler(id: PathParameter) : Handler<Content> {
+    val id by id
+
+    override suspend fun CoroutineScope.compute(): Content {
+        return Content("hello world", "1")
+    }
+}
+
+private object PersonHandlerWithoutId : Handler<Person> {
+    override suspend fun CoroutineScope.compute(): Person {
+        return Person("Test")
+    }
+}
+
+private object ContentHandlerWithoutId : Handler<Content> {
+    override suspend fun CoroutineScope.compute(): Content {
+        return Content("hello world", "1")
+    }
+}
+
+private class Person(val name: String)
+
+private class Content(val text: String, @Hidden val personId: String) : CustomType<Content> {
+    override fun TypeDefinitionBuilder.definition(): TypeDefinition<Content> {
+        return `object` {
+            inferFromStructure()
+
+            relationship<Person>("id") { personId }
+        }
+    }
+}
 
 @Documented("Documented Handler")
 private object DocumentedHandler : Handler<String> {
