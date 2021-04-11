@@ -111,13 +111,11 @@ private class EvaluatedEndpoint(
         }
     }
 
-    private fun PipelineContext<Unit, ApplicationCall>.respond(endpoints: List<EvaluatedEndpoint>) {
+    private suspend fun PipelineContext<Unit, ApplicationCall>.respond(endpoints: List<EvaluatedEndpoint>) {
         val request = RESTApplicationRequest(this, parameters)
-        runBlocking(coroutineContext) {
-            val result = endpoint(request)
-            val encoded = result.encode(context.request, endpoints)
-            context.respond(encoded)
-        }
+        val result = endpoint(request)
+        val encoded = result.encode(context.request, endpoints)
+        context.respond(encoded)
     }
 
     fun export(routing: Routing, endpoints: List<EvaluatedEndpoint>) {
