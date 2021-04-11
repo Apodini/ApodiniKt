@@ -7,6 +7,7 @@ import de.tum.`in`.ase.apodini.properties.options.HTTPParameterMode
 import de.tum.`in`.ase.apodini.properties.options.http
 import de.tum.`in`.ase.apodini.request.Request
 import de.tum.`in`.ase.apodini.types.Encoder
+import de.tum.`in`.ase.apodini.types.Object
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.http.*
@@ -24,112 +25,6 @@ import java.util.*
 class RESTExporter(
     private val port: Int = 8080,
 ): Exporter {
-    private class ApplicationRequest(
-        private val context: PipelineContext<Unit, ApplicationCall>,
-        private val parameters: Map<UUID, Pair<SemanticModel.Parameter<*>, EvaluatedEndpoint.ParameterDecodingStrategy>>
-    ) : Request, CoroutineScope by context, EnvironmentStore by EnvironmentStore.empty {
-        override fun <T> parameter(id: UUID): T {
-            val (parameter, strategy) = parameters[id] ?: throw IllegalArgumentException("Invalid Parameter Retrieved")
-            val value = when (strategy) {
-                is EvaluatedEndpoint.ParameterDecodingStrategy.Path -> {
-                    @Suppress("UNCHECKED_CAST")
-                    context.call.parameters[parameter.name]?.let { it as? T }
-                }
-                is EvaluatedEndpoint.ParameterDecodingStrategy.Body -> TODO()
-                is EvaluatedEndpoint.ParameterDecodingStrategy.Query -> {
-                    @Suppress("UNCHECKED_CAST")
-                    context.call.request.queryParameters[parameter.name]?.let { it as? T }
-                }
-                is EvaluatedEndpoint.ParameterDecodingStrategy.Header -> {
-                    @Suppress("UNCHECKED_CAST")
-                    context.call.request.headers[parameter.name]?.let { it as? T }
-                }
-            }
-
-            value?.let { return it }
-            parameter.defaultValue?.let { defaultValue ->
-                @Suppress("UNCHECKED_CAST")
-                return defaultValue as T
-            }
-
-            if (parameter.type.isMarkedNullable) {
-                @Suppress("UNCHECKED_CAST")
-                return null as T
-            }
-
-            throw BadRequestException("Expected argument ${parameter.name}")
-        }
-    }
-
-    private class EvaluatedEndpoint(
-        private val endpoint: SemanticModel.Endpoint<*>,
-    ) {
-        private val parameters = mutableMapOf<UUID, Pair<SemanticModel.Parameter<*>, ParameterDecodingStrategy>>()
-
-        sealed class ParameterDecodingStrategy {
-            object Path : ParameterDecodingStrategy()
-            class Body(val alone: Boolean) : ParameterDecodingStrategy()
-            object Query : ParameterDecodingStrategy()
-            object Header : ParameterDecodingStrategy()
-        }
-
-        init {
-            val multipleBodyParams = when (endpoint.operation) {
-                Operation.Create, Operation.Update ->
-                    endpoint.parameters.count { it.httpOption == null || it.httpOption == HTTPParameterMode.body } > 1
-                Operation.Read, Operation.Delete ->
-                    endpoint.parameters.count { it.httpOption == HTTPParameterMode.body } > 1
-            }
-
-            endpoint.parameters.forEach {
-                val strategy = when (it.httpOption) {
-                    HTTPParameterMode.Body -> ParameterDecodingStrategy.Body(!multipleBodyParams)
-                    HTTPParameterMode.Path -> ParameterDecodingStrategy.Path
-                    HTTPParameterMode.Query -> ParameterDecodingStrategy.Query
-                    HTTPParameterMode.Header -> ParameterDecodingStrategy.Header
-                    null -> when (endpoint.operation) {
-                        Operation.Create, Operation.Update -> ParameterDecodingStrategy.Body(!multipleBodyParams)
-                        Operation.Read, Operation.Delete -> ParameterDecodingStrategy.Query
-                    }
-                }
-                parameters[it.id] = it to strategy
-            }
-        }
-
-        private fun PipelineContext<Unit, ApplicationCall>.respond() {
-            val request = ApplicationRequest(this, parameters)
-            runBlocking(coroutineContext) {
-                val result = endpoint(request)
-                val encoded = result.encode(context.request)
-                context.respond(encoded)
-            }
-        }
-
-        fun export(routing: Routing) {
-            val path = endpoint.path.map { param ->
-                when (param) {
-                    is SemanticModel.PathComponent.StringPathComponent -> param.value
-                    is SemanticModel.PathComponent.ParameterPathComponent -> "{${param.parameter.name}}"
-                }
-            }.joinToString("/")
-
-            when (endpoint.operation) {
-                Operation.Create -> routing.post(path) {
-                    respond()
-                }
-                Operation.Read -> routing.get(path) {
-                    respond()
-                }
-                Operation.Update -> routing.put(path) {
-                    respond()
-                }
-                Operation.Delete -> routing.delete(path) {
-                    respond()
-                }
-            }
-        }
-    }
-
     override fun export(model: SemanticModel) {
         val endpoints = model.endpoints.map { EvaluatedEndpoint(it) }
         embeddedServer(Netty, port = port) {
@@ -138,28 +33,140 @@ class RESTExporter(
             }
 
             routing {
-                endpoints.forEach { it.export(this) }
+                endpoints.forEach { it.export(this, endpoints) }
             }
         }.start()
     }
 }
 
+private class RESTApplicationRequest(
+    private val context: PipelineContext<Unit, ApplicationCall>,
+    private val parameters: Map<UUID, Pair<SemanticModel.Parameter<*>, EvaluatedEndpoint.ParameterDecodingStrategy>>
+) : Request, CoroutineScope by context, EnvironmentStore by EnvironmentStore.empty {
+    override fun <T> parameter(id: UUID): T {
+        val (parameter, strategy) = parameters[id] ?: throw IllegalArgumentException("Invalid Parameter Retrieved")
+        val value = when (strategy) {
+            is EvaluatedEndpoint.ParameterDecodingStrategy.Path -> {
+                @Suppress("UNCHECKED_CAST")
+                context.call.parameters[parameter.name]?.let { it as? T }
+            }
+            is EvaluatedEndpoint.ParameterDecodingStrategy.Body -> TODO()
+            is EvaluatedEndpoint.ParameterDecodingStrategy.Query -> {
+                @Suppress("UNCHECKED_CAST")
+                context.call.request.queryParameters[parameter.name]?.let { it as? T }
+            }
+            is EvaluatedEndpoint.ParameterDecodingStrategy.Header -> {
+                @Suppress("UNCHECKED_CAST")
+                context.call.request.headers[parameter.name]?.let { it as? T }
+            }
+        }
 
-private fun <T> SemanticModel.Result<T>.encode(request: ApplicationRequest): Any {
+        value?.let { return it }
+        parameter.defaultValue?.let { defaultValue ->
+            @Suppress("UNCHECKED_CAST")
+            return defaultValue as T
+        }
+
+        if (parameter.type.isMarkedNullable) {
+            @Suppress("UNCHECKED_CAST")
+            return null as T
+        }
+
+        throw BadRequestException("Expected argument ${parameter.name}")
+    }
+}
+
+private class EvaluatedEndpoint(
+    val endpoint: SemanticModel.Endpoint<*>,
+) {
+    val parameters = mutableMapOf<UUID, Pair<SemanticModel.Parameter<*>, ParameterDecodingStrategy>>()
+
+    sealed class ParameterDecodingStrategy {
+        object Path : ParameterDecodingStrategy()
+        class Body(val alone: Boolean) : ParameterDecodingStrategy()
+        object Query : ParameterDecodingStrategy()
+        object Header : ParameterDecodingStrategy()
+    }
+
+    init {
+        val multipleBodyParams = when (endpoint.operation) {
+            Operation.Create, Operation.Update ->
+                endpoint.parameters.count { it.httpOption == null || it.httpOption == HTTPParameterMode.body } > 1
+            Operation.Read, Operation.Delete ->
+                endpoint.parameters.count { it.httpOption == HTTPParameterMode.body } > 1
+        }
+
+        endpoint.parameters.forEach {
+            val strategy = when (it.httpOption) {
+                HTTPParameterMode.Body -> ParameterDecodingStrategy.Body(!multipleBodyParams)
+                HTTPParameterMode.Path -> ParameterDecodingStrategy.Path
+                HTTPParameterMode.Query -> ParameterDecodingStrategy.Query
+                HTTPParameterMode.Header -> ParameterDecodingStrategy.Header
+                null -> when (endpoint.operation) {
+                    Operation.Create, Operation.Update -> ParameterDecodingStrategy.Body(!multipleBodyParams)
+                    Operation.Read, Operation.Delete -> ParameterDecodingStrategy.Query
+                }
+            }
+            parameters[it.id] = it to strategy
+        }
+    }
+
+    private fun PipelineContext<Unit, ApplicationCall>.respond(endpoints: List<EvaluatedEndpoint>) {
+        val request = RESTApplicationRequest(this, parameters)
+        runBlocking(coroutineContext) {
+            val result = endpoint(request)
+            val encoded = result.encode(context.request, endpoints)
+            context.respond(encoded)
+        }
+    }
+
+    fun export(routing: Routing, endpoints: List<EvaluatedEndpoint>) {
+        val path = endpoint.path.map { param ->
+            when (param) {
+                is SemanticModel.PathComponent.StringPathComponent -> param.value
+                is SemanticModel.PathComponent.ParameterPathComponent -> "{${param.parameter.name}}"
+            }
+        }.joinToString("/")
+
+        when (endpoint.operation) {
+            Operation.Create -> routing.post(path) {
+                respond(endpoints)
+            }
+            Operation.Read -> routing.get(path) {
+                respond(endpoints)
+            }
+            Operation.Update -> routing.put(path) {
+                respond(endpoints)
+            }
+            Operation.Delete -> routing.delete(path) {
+                respond(endpoints)
+            }
+        }
+    }
+}
+
+private fun <T> SemanticModel.Result<T>.encode(request: ApplicationRequest, endpoints: List<EvaluatedEndpoint>): Any {
     val encoder = BasicEncoder()
 
-    encoder.keyed {
-        encode("data") {
-            encode(this)
+    if (definition is Object) {
+        encode(encoder)
+    } else {
+        encoder.keyed {
+            encode("data") {
+                encode(this)
+            }
         }
+    }
+
+    encoder.keyed {
         encode("_links") {
             keyed {
-                encode("self") {
-                    encodeString(linkToSelf.relativeURL(request))
+                encode("_self") {
+                    encodeString(linkToSelf.relativeURL(request, endpoints))
                 }
                 links.forEach { link ->
                     encode(link.name) {
-                        encodeString(link.relativeURL(request))
+                        encodeString(link.relativeURL(request, endpoints))
                     }
                 }
             }
@@ -169,44 +176,58 @@ private fun <T> SemanticModel.Result<T>.encode(request: ApplicationRequest): Any
     return encoder.value!!
 }
 
-private fun SemanticModel.Result.Link<*>.relativeURL(request: ApplicationRequest): String {
+private fun SemanticModel.Result.Link<*>.relativeURL(request: ApplicationRequest, endpoints: List<EvaluatedEndpoint>): String {
+    val evaluatedEndpoint = endpoints.first { it.endpoint == endpoint }
+
     val pathParameters = parameterAssignment
         .mapNotNull { assignment ->
-            if (assignment.parameter.httpOption == HTTPParameterMode.path) {
-                assignment.parameter.id to (assignment.value as String)
+            val id = assignment.parameter.id
+            val strategy = evaluatedEndpoint.parameters[id]!!.second
+            if (strategy == EvaluatedEndpoint.ParameterDecodingStrategy.Path) {
+                id to (assignment.value as String)
             } else {
                 null
             }
         }
         .toMap()
 
-    val path = endpoint
-        .path
-        .joinToString("/") { component ->
-            when (component) {
-                is SemanticModel.PathComponent.StringPathComponent -> component.value
-                is SemanticModel.PathComponent.ParameterPathComponent -> pathParameters[component.parameter.id]
-                    ?: component.parameter.name
+    val queryParameters = parameterAssignment
+        .mapNotNull { assignment ->
+            val id = assignment.parameter.id
+            val strategy = evaluatedEndpoint.parameters[id]!!.second
+            if (strategy == EvaluatedEndpoint.ParameterDecodingStrategy.Query && assignment.value != null) {
+                assignment.parameter.name to (assignment.value as String)
+            } else {
+                null
             }
         }
+        .toMap()
 
-    return "${request.local.base}/$path"
+    return URLBuilder()
+        .apply {
+            host = request.local.remoteHost
+            protocol = when (request.local.scheme) {
+                "http" -> URLProtocol.HTTP
+                "https" -> URLProtocol.HTTPS
+                else -> URLProtocol(request.local.scheme, request.port() - 1)
+            }
+            port = request.port()
+            encodedPath = endpoint
+                .path
+                .joinToString("/") { component ->
+                    when (component) {
+                        is SemanticModel.PathComponent.StringPathComponent -> component.value
+                        is SemanticModel.PathComponent.ParameterPathComponent -> pathParameters[component.parameter.id]
+                            ?: "{${component.parameter.name}}"
+                    }
+                }
+
+            queryParameters.forEach { (name, value) ->
+                parameters[name] = value
+            }
+        }
+        .buildString()
 }
-
-private val RequestConnectionPoint.base: String
-    get() {
-        val defaultPort = when (scheme) {
-            "http" -> 80
-            "https" -> 443
-            else -> null
-        }
-
-        return if (port == defaultPort) {
-            "$scheme://$remoteHost"
-        } else {
-            "$scheme://$remoteHost:$port"
-        }
-    }
 
 private class BasicEncoder : Encoder {
     var value: Any? = null
