@@ -11,6 +11,7 @@ import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.environment.EnvironmentKeys
 import de.tum.`in`.ase.apodini.exporter.RESTExporter
 import de.tum.`in`.ase.apodini.impl.group
+import de.tum.`in`.ase.apodini.impl.text
 import de.tum.`in`.ase.apodini.modifiers.ModifiableComponent
 import de.tum.`in`.ase.apodini.properties.PathParameter
 import de.tum.`in`.ase.apodini.properties.environment
@@ -28,6 +29,8 @@ fun main() {
 
 class SWAPI : WebService {
     override fun ComponentBuilder.invoke() {
+        text("Welcome to a Star Wars API")
+
         entity("films", SWAPIStore::films) { filmId ->
             itemRelationship("characters", filmId) { id ->
                 charactersByFilm[id] ?: throw NotFoundException()

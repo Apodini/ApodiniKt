@@ -80,8 +80,6 @@ class SemanticModel internal constructor(
             val destination: Endpoint<T>
         )
 
-        private val parentPath by lazy { path.reversed().drop(1).reversed() }
-
         val operation by lazy {
             with(environment) {
                 operation()
@@ -89,15 +87,15 @@ class SemanticModel internal constructor(
         }
 
         val parent by lazy {
-            semanticModel.endpoints.firstOrNull { it.path == parentPath }
+            semanticModel.parent(path)
         }
 
         val children by lazy {
-            semanticModel.endpoints.filter { it.parentPath == path }
+            semanticModel.endpoints.filter { it.parent == this }
         }
 
         val neighbors by lazy {
-            semanticModel.endpoints.filter { it.parentPath == parentPath && it != this }
+            semanticModel.endpoints.filter { it.parent == parent && it != this }
         }
 
         val links by lazy {
@@ -170,6 +168,15 @@ class SemanticModel internal constructor(
 
         return null
     }
+}
+
+private fun SemanticModel.parent(path: List<SemanticModel.PathComponent>): SemanticModel.Endpoint<*>? {
+    if (path.isEmpty()) {
+        return null
+    }
+
+    val dropped = path.dropLast(1).toList()
+    return endpoints.firstOrNull { it.path == dropped } ?: parent(dropped)
 }
 
 private fun <A, B> Object.Relationship<A, B>.partiallyApplied(
