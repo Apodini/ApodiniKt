@@ -6,6 +6,7 @@ import de.tum.`in`.ase.apodini.model.SemanticModel
 import de.tum.`in`.ase.apodini.properties.options.HTTPParameterMode
 import de.tum.`in`.ase.apodini.properties.options.http
 import de.tum.`in`.ase.apodini.request.Request
+import de.tum.`in`.ase.apodini.types.BooleanType.encode
 import de.tum.`in`.ase.apodini.types.Encoder
 import de.tum.`in`.ase.apodini.types.Object
 import io.ktor.application.*
@@ -26,7 +27,7 @@ class RESTExporter(
     private val port: Int = 8080,
 ): Exporter {
     override fun export(model: SemanticModel) {
-        val endpoints = model.endpoints.map { EvaluatedEndpoint(it) }
+        val endpoints = model.endpoints.map { EvaluatedEndpoint(model, it) }
         embeddedServer(Netty, port = port) {
             install(ContentNegotiation) {
                 jackson()
@@ -40,7 +41,7 @@ class RESTExporter(
 }
 
 private class RESTApplicationRequest(
-    private val context: PipelineContext<Unit, ApplicationCall>,
+    val context: PipelineContext<Unit, ApplicationCall>,
     private val parameters: Map<UUID, Pair<SemanticModel.Parameter<*>, EvaluatedEndpoint.ParameterDecodingStrategy>>
 ) : Request, CoroutineScope by context, EnvironmentStore by EnvironmentStore.empty {
     override fun <T> parameter(id: UUID): T {
@@ -77,6 +78,7 @@ private class RESTApplicationRequest(
 }
 
 private class EvaluatedEndpoint(
+    val semanticModel: SemanticModel,
     val endpoint: SemanticModel.Endpoint<*>,
 ) {
     val parameters = mutableMapOf<UUID, Pair<SemanticModel.Parameter<*>, ParameterDecodingStrategy>>()
@@ -114,7 +116,7 @@ private class EvaluatedEndpoint(
     private suspend fun PipelineContext<Unit, ApplicationCall>.respond(endpoints: List<EvaluatedEndpoint>) {
         val request = RESTApplicationRequest(this, parameters)
         val result = endpoint(request)
-        val encoded = result.encode(context.request, endpoints)
+        val encoded = result.encode(request, semanticModel, endpoints)
         context.respond(encoded)
     }
 
@@ -143,8 +145,12 @@ private class EvaluatedEndpoint(
     }
 }
 
-private fun <T> SemanticModel.Result<T>.encode(request: ApplicationRequest, endpoints: List<EvaluatedEndpoint>): Any {
-    val encoder = BasicEncoder()
+private fun <T> SemanticModel.Result<T>.encode(
+    request: RESTApplicationRequest,
+    semanticModel: SemanticModel,
+    endpoints: List<EvaluatedEndpoint>
+): Any {
+    val encoder = BasicEncoder(semanticModel, request, endpoints)
 
     if (definition is Object) {
         encode(encoder)
@@ -160,11 +166,11 @@ private fun <T> SemanticModel.Result<T>.encode(request: ApplicationRequest, endp
         encode("_links") {
             keyed {
                 encode("_self") {
-                    encodeString(linkToSelf.relativeURL(request, endpoints))
+                    encodeString(linkToSelf.relativeURL(request.context.context.request, endpoints))
                 }
                 links.forEach { link ->
                     encode(link.name) {
-                        encodeString(link.relativeURL(request, endpoints))
+                        encodeString(link.relativeURL(request.context.context.request, endpoints))
                     }
                 }
             }
@@ -227,7 +233,11 @@ private fun SemanticModel.Result.Link<*>.relativeURL(request: ApplicationRequest
         .buildString()
 }
 
-private class BasicEncoder : Encoder {
+private class BasicEncoder(
+    val semanticModel: SemanticModel,
+    val request: RESTApplicationRequest,
+    val endpoints: List<EvaluatedEndpoint>
+) : Encoder {
     var value: Any? = null
 
     override fun encodeString(string: String) {
@@ -252,24 +262,45 @@ private class BasicEncoder : Encoder {
 
     override fun keyed(init: Encoder.KeyedContainer.() -> Unit) {
         @Suppress("UNCHECKED_CAST")
-        value = TestKeyedEncoder((value as? MutableMap<String, Any?>) ?: mutableMapOf()).also(init).map
+        value = TestKeyedEncoder(semanticModel, request, endpoints, (value as? MutableMap<String, Any?>) ?: mutableMapOf()).also(init).map
     }
 
     override fun unKeyed(init: Encoder.UnKeyedContainer.() -> Unit) {
         @Suppress("UNCHECKED_CAST")
-        value = TestUnKeyedEncoder((value as? MutableList<Any?>) ?: mutableListOf()).also(init).list
+        value = TestUnKeyedEncoder(semanticModel, request, endpoints, (value as? MutableList<Any?>) ?: mutableListOf()).also(init).list
     }
 }
 
-private class TestKeyedEncoder(val map: MutableMap<String, Any?>) : Encoder.KeyedContainer {
+private class TestKeyedEncoder(
+    val semanticModel: SemanticModel,
+    val request: RESTApplicationRequest,
+    val endpoints: List<EvaluatedEndpoint>,
+    val map: MutableMap<String, Any?>
+) : Encoder.KeyedContainer {
     override fun encode(key: String, init: Encoder.() -> Unit) {
-        map[key] = BasicEncoder().also(init).value
+        map[key] = BasicEncoder(semanticModel, request, endpoints).also(init).value
+    }
+
+    override fun encodeIdentifier(identifier: String, definition: Object<*>) {
+        val link = semanticModel.link(definition, identifier, request) ?: return
+        encode("_links") {
+            keyed {
+                encode("_self") {
+                    encodeString(link.relativeURL(request.context.context.request, endpoints))
+                }
+            }
+        }
     }
 }
 
-private class TestUnKeyedEncoder(val list: MutableList<Any?>) : Encoder.UnKeyedContainer {
+private class TestUnKeyedEncoder(
+    val semanticModel: SemanticModel,
+    val request: RESTApplicationRequest,
+    val endpoints: List<EvaluatedEndpoint>,
+    val list: MutableList<Any?>
+) : Encoder.UnKeyedContainer {
     override fun encode(init: Encoder.() -> Unit) {
-        list.add(BasicEncoder().also(init).value)
+        list.add(BasicEncoder(semanticModel, request, endpoints).also(init).value)
     }
 }
 

@@ -3,6 +3,9 @@ package de.tum.`in`.ase.apodini.types
 interface Encoder {
     interface KeyedContainer {
         fun encode(key: String, init: Encoder.() -> Unit)
+        fun encodeIdentifier(identifier: String, definition: Object<*>) {
+            // No-op
+        }
     }
 
     interface UnKeyedContainer {

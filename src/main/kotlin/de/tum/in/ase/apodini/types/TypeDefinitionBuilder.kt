@@ -53,6 +53,8 @@ abstract class ObjectDefinitionBuilder<T> {
     @TypeDefinitionDsl
     abstract fun inferFromStructure()
 
+    abstract fun identifier(getter: T.() -> String)
+
     @PublishedApi
     internal abstract fun <V : Any, O : String?> inherits(type: KType, getter: T.() -> O)
 

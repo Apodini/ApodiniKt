@@ -37,7 +37,7 @@ class Scalar<T, Encoded> internal constructor(
     name: String? = null,
     val kind: ScalarType<Encoded>,
     documentation: String?,
-    private val extract: T.() -> Encoded
+    internal val extract: T.() -> Encoded
 ) : TypeDefinition<T>(documentation) {
     override val name = name ?: kind.name
 
@@ -75,6 +75,23 @@ class Object<T> internal constructor(
         val identifier: A.() -> String?
     )
 
+    class Property<Source, T>(
+        val name: String,
+        val documentation: String? = null,
+        val definition: TypeDefinition<T>,
+        internal val getter: Source.() -> T
+    ) {
+        fun Encoder.KeyedContainer.encode(source: Source) {
+            encode(name) {
+                with(definition) {
+                    encode(getter(source))
+                }
+            }
+        }
+    }
+
+    internal var internalIdentifier: (T.() -> String)? = null
+
     var inheritance: Relationship<T, *>? = null
         internal set
 
@@ -87,21 +104,6 @@ class Object<T> internal constructor(
     val properties: List<Property<T, *>>
         get() = internalProperties.toList()
 
-    class Property<Source, T>(
-        val name: String,
-        val documentation: String? = null,
-        val definition: TypeDefinition<T>,
-        private val getter: Source.() -> T
-    ) {
-        fun Encoder.KeyedContainer.encode(source: Source) {
-            encode(name) {
-                with(definition) {
-                    encode(getter(source))
-                }
-            }
-        }
-    }
-
     override fun Encoder.encode(value: T) {
         keyed {
             properties.forEach { property ->
@@ -109,6 +111,9 @@ class Object<T> internal constructor(
                     encode(value)
                 }
             }
+
+            val identifier = inheritance?.identifier ?: internalIdentifier
+            identifier?.let { value.it() }?.let { encodeIdentifier(it, this@Object) }
         }
     }
 }

@@ -1,6 +1,7 @@
 package de.tum.`in`.ase.apodini.internal.reflection
 
 import de.tum.`in`.ase.apodini.types.*
+import de.tum.`in`.ase.apodini.types.Array
 import de.tum.`in`.ase.apodini.types.contains
 import de.tum.`in`.ase.apodini.types.Enum
 import java.lang.IllegalArgumentException
@@ -249,6 +250,10 @@ private class StandardObjectBuilder<T>(
         )
     }
 
+    override fun identifier(getter: T.() -> String) {
+        definition.internalIdentifier = getter
+    }
+
     override fun <V : Any, O : String?> inherits(type: KType, getter: T.() -> O) {
         val inferred = inferenceManager.infer<V>(type) as? Object<V>
             ?: throw IllegalArgumentException("Cannot inherit from non-object type")
@@ -268,9 +273,88 @@ private class StandardObjectBuilder<T>(
     }
 
     fun build(): Object<T> {
+        if (definition.internalIdentifier == null && definition.inheritance == null) {
+            definition.internalIdentifier = definition.inferMostLikelyIdentifier()
+        }
+
         return definition
     }
 }
+
+private val commonIdParameterNames = setOf("id", "identifier")
+
+private fun <T> Object<T>.inferMostLikelyIdentifier(): (T.() -> String)? {
+    val stringTypes = properties.mapNotNull { it.identifierCandidate() }
+
+    stringTypes
+        .firstOrNull { commonIdParameterNames.contains(it.property.name) }
+        ?.run {
+            return { identifier() }
+        }
+
+    // TODO: add more edge cases
+    return null
+}
+
+private sealed class IdentifierCandidate<T> {
+    abstract val property: Object.Property<T, *>
+    abstract fun T.identifier(): String
+
+    class StringCandidate<T>(override val property: Object.Property<T, String>) : IdentifierCandidate<T>() {
+        override fun T.identifier(): String {
+            return property.getter(this)
+        }
+    }
+
+    class IntCandidate<T>(override val property: Object.Property<T, Int>) : IdentifierCandidate<T>() {
+        override fun T.identifier(): String {
+            return property.getter(this).toString()
+        }
+
+    }
+
+    class BooleanCandidate<T>(override val property: Object.Property<T, Boolean>) : IdentifierCandidate<T>() {
+        override fun T.identifier(): String {
+            return property.getter(this).toString()
+        }
+    }
+
+    class DoubleCandidate<T>(override val property: Object.Property<T, Double>) : IdentifierCandidate<T>() {
+        override fun T.identifier(): String {
+            return property.getter(this).toString()
+        }
+    }
+
+    class CustomScalar<T, A>(override val property: Object.Property<T, A>, val scalar: Scalar<A, *>) : IdentifierCandidate<T>() {
+        override fun T.identifier(): String {
+            val result = property.getter(this)
+            return with(scalar) {
+                when (kind) {
+                    StringType -> result.extract() as String
+                    IntType -> (result.extract() as Int).toString()
+                    BooleanType -> (result.extract() as Boolean).toString()
+                    DoubleType -> (result.extract() as Double).toString()
+                }
+            }
+        }
+    }
+}
+
+private fun <T, A> Object.Property<T, A>.identifierCandidate(): IdentifierCandidate<T>? {
+    @Suppress("UNCHECKED_CAST")
+    return when (definition) {
+        StringType -> IdentifierCandidate.StringCandidate(this as Object.Property<T, String>)
+        IntType -> IdentifierCandidate.IntCandidate(this as Object.Property<T, Int>)
+        BooleanType -> IdentifierCandidate.BooleanCandidate(this as Object.Property<T, Boolean>)
+        DoubleType -> IdentifierCandidate.DoubleCandidate(this as Object.Property<T, Double>)
+        is Scalar<*, *> -> IdentifierCandidate.CustomScalar(this, definition as Scalar<A, *>)
+        is Enum -> null
+        is Object -> null
+        is Array<*> -> null
+        is Nullable<*> -> null
+    }
+}
+
 private class StandardEnumBuilder<T>(
     private val name: String,
     private val documentation: String?

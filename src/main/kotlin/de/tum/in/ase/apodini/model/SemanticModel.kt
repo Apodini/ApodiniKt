@@ -152,6 +152,24 @@ class SemanticModel internal constructor(
             }
         }
     }
+
+    fun <T> link(definition: Object<T>, id: String, request: Request): Result.Link<*>? {
+        definition.inheritance?.let { return link(it.destination, id, request) }
+
+        endpointRepresenting(definition)?.let { destinationEndpoint ->
+            val parameterAssignments = destinationEndpoint.endpoint.parameters.mapNotNull { parameter ->
+                if (parameter == destinationEndpoint.identifier) {
+                    Result.ParameterAssignment(destinationEndpoint.identifier, id)
+                } else {
+                    parameter.assigned(request)
+                }
+            }
+
+            return Result.Link("_self", destinationEndpoint.endpoint, parameterAssignments)
+        }
+
+        return null
+    }
 }
 
 private fun <A, B> Object.Relationship<A, B>.partiallyApplied(
