@@ -13,10 +13,7 @@ import de.tum.`in`.ase.apodini.model.operation
 import de.tum.`in`.ase.apodini.modifiers.withEnvironment
 import de.tum.`in`.ase.apodini.properties.Parameter
 import de.tum.`in`.ase.apodini.properties.PathParameter
-import de.tum.`in`.ase.apodini.properties.options.HTTPParameterMode
-import de.tum.`in`.ase.apodini.properties.options.OptionSet
-import de.tum.`in`.ase.apodini.properties.options.default
-import de.tum.`in`.ase.apodini.properties.options.http
+import de.tum.`in`.ase.apodini.properties.options.*
 import de.tum.`in`.ase.apodini.properties.parameter
 import de.tum.`in`.ase.apodini.properties.pathParameter
 import de.tum.`in`.ase.apodini.test.utils.semanticModel
@@ -94,6 +91,7 @@ internal class SemanticModelBuilderTest : TestCase() {
             +object : Handler<String> {
                 val name by parameter<String> {
                     default("World")
+                    documentation("Name that should be greeted")
                     http { query }
                 }
 
@@ -110,6 +108,7 @@ internal class SemanticModelBuilderTest : TestCase() {
         assertEquals(endpoint.parameters.first().name, "name")
         assertEquals(endpoint.parameters.first().type, typeOf<String>())
         assertEquals(endpoint.parameters.first().defaultValue, "World")
+        assertEquals(endpoint.parameters.first().documentation, "Name that should be greeted")
 
         @Suppress("UNCHECKED_CAST")
         val options = endpoint.parameters.first().options as OptionSet<Parameter<String>>

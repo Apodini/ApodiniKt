@@ -39,6 +39,7 @@ class SemanticModel internal constructor(
         val name: String,
         val type: KType,
         val defaultValue: T?,
+        val documentation: String?,
         val options: OptionSet<ParameterProperty<T>>
     )
 
@@ -183,7 +184,7 @@ private fun <A, B> Object.Relationship<A, B>.partiallyApplied(
     semanticModel: SemanticModel
 ): PartiallyAppliedEndpoint<A, B>? {
     return semanticModel.endpointRepresenting(destination)?.let { destinationEndpoint ->
-        PartiallyAppliedEndpoint<A, B>(
+        PartiallyAppliedEndpoint(
             name ?: destination.name.toCamelCase(),
             destinationEndpoint.endpoint
         ) { value, request ->

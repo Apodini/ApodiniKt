@@ -23,6 +23,7 @@ import de.tum.`in`.ase.apodini.modifiers.ModifiableComponent
 import de.tum.`in`.ase.apodini.modifiers.Modifier
 import de.tum.`in`.ase.apodini.properties.PathParameter
 import de.tum.`in`.ase.apodini.properties.options.HTTPParameterMode
+import de.tum.`in`.ase.apodini.properties.options.documentation
 import de.tum.`in`.ase.apodini.types.Documented
 import java.util.*
 import kotlin.reflect.KType
@@ -282,7 +283,8 @@ private class ParameterCollector : PropertyCollector {
 
     override fun <T> registerParameter(id: UUID, name: String, type: KType, options: OptionSet<Parameter<T>>) {
         val defaultValue = options<T> { default }
-        parameters.add(SemanticModel.Parameter(id, name, type, defaultValue, options))
+        val documentation = options<String> { documentation }
+        parameters.add(SemanticModel.Parameter(id, name, type, defaultValue, documentation, options))
     }
 
     fun build(): List<SemanticModel.Parameter<*>> {

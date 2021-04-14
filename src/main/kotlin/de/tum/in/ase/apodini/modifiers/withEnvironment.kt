@@ -12,7 +12,7 @@ fun <T : ModifiableComponent<T>> ModifiableComponent<T>.withEnvironment(init: En
 }
 
 private class EnvironmentModifier(
-    val store: EnvironmentStore
+    private val store: EnvironmentStore
 ) : Modifier {
     override fun ComponentBuilder.wrap(component: Component) {
         +EnvironmentComponent(store) {
@@ -22,8 +22,8 @@ private class EnvironmentModifier(
 }
 
 private class EnvironmentComponent(
-    val store: EnvironmentStore,
-    val init: ComponentBuilder.() -> Unit
+    private val store: EnvironmentStore,
+    private val init: ComponentBuilder.() -> Unit
 ) : InternalComponent() {
     override fun ComponentVisitor.visit() {
         enterGroup(ComponentVisitor.Group.Environment(store))
