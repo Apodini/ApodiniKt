@@ -9,7 +9,7 @@ import de.tum.`in`.ase.apodini.*
 import de.tum.`in`.ase.apodini.configuration.ConfigurationBuilder
 import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.environment.EnvironmentKeys
-import de.tum.`in`.ase.apodini.exporter.RESTExporter
+import de.tum.`in`.ase.apodini.exporter.REST
 import de.tum.`in`.ase.apodini.impl.group
 import de.tum.`in`.ase.apodini.impl.text
 import de.tum.`in`.ase.apodini.modifiers.ModifiableComponent
@@ -88,7 +88,7 @@ class SWAPI : WebService {
     }
 
     override fun ConfigurationBuilder.configure() {
-        use(RESTExporter(port = 8080))
+        use(REST(port = 8080))
 
         environment {
             store {
@@ -142,7 +142,7 @@ private inline fun <reified T> ComponentBuilder.itemRelationship(id: PathParamet
 
 private class AllItemsHandler<T>(val items: SWAPIStore.() -> Map<Int, T>) : Handler<List<T>> {
     val store by environment { store }
-    override suspend fun CoroutineScope.compute(): List<T> {
+    override suspend fun CoroutineScope.handle(): List<T> {
         return store.items().values.toList()
     }
 }
@@ -151,7 +151,7 @@ private class ItemHandler<T>(id: PathParameter, val items: SWAPIStore.() -> Map<
     val id by id
     val store by environment { store }
 
-    override suspend fun CoroutineScope.compute(): T {
+    override suspend fun CoroutineScope.handle(): T {
         return id.toIntOrNull()?.let { store.items()[it] } ?: throw NotFoundException()
     }
 }
@@ -160,7 +160,7 @@ private class ItemRelationshipHandler<T>(id: PathParameter, val items: SWAPIStor
     val id by id
     val store by environment { store }
 
-    override suspend fun CoroutineScope.compute(): T {
+    override suspend fun CoroutineScope.handle(): T {
         return id.toIntOrNull()?.let { store.items(it) } ?: throw NotFoundException()
     }
 }

@@ -135,7 +135,7 @@ class SemanticModel internal constructor(
                     property.update()
                 }
 
-                val value = with(newInstance) { delegatedRequest.compute() }
+                val value = with(newInstance) { delegatedRequest.handle() }
                 val selfLink = selfEndpoint.link(value, request)!!
                 val links = linkedEndpoints.mapNotNull { it.link(value, request) }
                 return Result(value, typeDefinition, selfLink, links)

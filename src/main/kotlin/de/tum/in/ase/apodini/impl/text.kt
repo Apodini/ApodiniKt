@@ -10,7 +10,7 @@ fun ComponentBuilder.text(response: String): ModifiableComponent<*> {
 }
 
 private class Text(val response: String): Handler<String> {
-    override suspend fun CoroutineScope.compute(): String {
+    override suspend fun CoroutineScope.handle(): String {
         return response
     }
 }
