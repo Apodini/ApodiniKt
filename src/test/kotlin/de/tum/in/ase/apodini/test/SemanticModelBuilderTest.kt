@@ -4,7 +4,7 @@ import de.tum.`in`.ase.apodini.Component
 import de.tum.`in`.ase.apodini.ComponentBuilder
 import de.tum.`in`.ase.apodini.Handler
 import de.tum.`in`.ase.apodini.environment.EnvironmentKey
-import de.tum.`in`.ase.apodini.exporter.RESTExporter
+import de.tum.`in`.ase.apodini.exporter.REST
 import de.tum.`in`.ase.apodini.impl.group
 import de.tum.`in`.ase.apodini.impl.text
 import de.tum.`in`.ase.apodini.model.Operation
@@ -36,7 +36,7 @@ internal class SemanticModelBuilderTest : TestCase() {
             text("Hello World")
         }
         assertEquals(semanticModel.exporters.count(), 1)
-        assert(semanticModel.exporters.first() is RESTExporter)
+        assert(semanticModel.exporters.first() is REST)
         assert(semanticModel.globalEnvironment.keys.isEmpty())
         assertEquals(semanticModel.endpoints.count(), 1)
 
@@ -51,7 +51,7 @@ internal class SemanticModelBuilderTest : TestCase() {
     fun testCustomHandlerWithOptionalString() {
         val semanticModel = semanticModel {
             +object : Handler<String?> {
-                override suspend fun CoroutineScope.compute(): String? {
+                override suspend fun CoroutineScope.handle(): String? {
                     return null
                 }
             }
@@ -70,7 +70,7 @@ internal class SemanticModelBuilderTest : TestCase() {
             +object : Handler<String> {
                 val name by parameter<String?>()
 
-                override suspend fun CoroutineScope.compute(): String {
+                override suspend fun CoroutineScope.handle(): String {
                     return "Hello, ${name ?: "World"}"
                 }
             }
@@ -95,7 +95,7 @@ internal class SemanticModelBuilderTest : TestCase() {
                     http { query }
                 }
 
-                override suspend fun CoroutineScope.compute(): String {
+                override suspend fun CoroutineScope.handle(): String {
                     return "Hello, $name"
                 }
             }
@@ -167,7 +167,7 @@ internal class SemanticModelBuilderTest : TestCase() {
                 +object : Handler<String> {
                     val id by pathId
 
-                    override suspend fun CoroutineScope.compute(): String {
+                    override suspend fun CoroutineScope.handle(): String {
                         return "User, $id"
                     }
                 }
@@ -206,7 +206,7 @@ internal class SemanticModelBuilderTest : TestCase() {
     fun testEnvironmentOnHandlerWithUnaryPlus() {
         val semanticModel = semanticModel {
             +object : Handler<String> {
-                override suspend fun CoroutineScope.compute(): String {
+                override suspend fun CoroutineScope.handle(): String {
                     return "Hello World"
                 }
             }.withEnvironment {
@@ -520,7 +520,7 @@ private val Parameter<*>.id: UUID
 private class PersonHandler(id: PathParameter) : Handler<Person> {
     val id by id
 
-    override suspend fun CoroutineScope.compute(): Person {
+    override suspend fun CoroutineScope.handle(): Person {
         return Person("Test")
     }
 }
@@ -528,19 +528,19 @@ private class PersonHandler(id: PathParameter) : Handler<Person> {
 private class ContentHandler(id: PathParameter) : Handler<Content> {
     val id by id
 
-    override suspend fun CoroutineScope.compute(): Content {
+    override suspend fun CoroutineScope.handle(): Content {
         return Content("hello world", "1")
     }
 }
 
 private object PersonHandlerWithoutId : Handler<Person> {
-    override suspend fun CoroutineScope.compute(): Person {
+    override suspend fun CoroutineScope.handle(): Person {
         return Person("Test")
     }
 }
 
 private object ContentHandlerWithoutId : Handler<Content> {
-    override suspend fun CoroutineScope.compute(): Content {
+    override suspend fun CoroutineScope.handle(): Content {
         return Content("hello world", "1")
     }
 }
@@ -559,7 +559,7 @@ private class Content(val text: String, @Hidden val personId: String) : CustomTy
 
 @Documented("Documented Handler")
 private object DocumentedHandler : Handler<String> {
-    override suspend fun CoroutineScope.compute(): String {
+    override suspend fun CoroutineScope.handle(): String {
         return "Hello, World!"
     }
 }

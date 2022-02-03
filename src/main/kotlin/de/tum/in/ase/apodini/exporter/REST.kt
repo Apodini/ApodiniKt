@@ -6,7 +6,6 @@ import de.tum.`in`.ase.apodini.model.SemanticModel
 import de.tum.`in`.ase.apodini.properties.options.HTTPParameterMode
 import de.tum.`in`.ase.apodini.properties.options.http
 import de.tum.`in`.ase.apodini.request.Request
-import de.tum.`in`.ase.apodini.types.BooleanType.encode
 import de.tum.`in`.ase.apodini.types.Encoder
 import de.tum.`in`.ase.apodini.types.Object
 import io.ktor.application.*
@@ -20,11 +19,10 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.util.pipeline.*
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.runBlocking
 import java.util.*
 
-class RESTExporter(
-    private val port: Int = 8080,
+class REST(
+    private val port: Int = 80,
 ): Exporter {
     override fun export(model: SemanticModel) {
         val endpoints = model.endpoints.map { EvaluatedEndpoint(model, it) }
@@ -165,7 +163,7 @@ private fun <T> SemanticModel.Result<T>.encode(
     encoder.keyed {
         encode("_links") {
             keyed {
-                encode("_self") {
+                encode("self") {
                     encodeString(linkToSelf.relativeURL(request.context.context.request, endpoints))
                 }
                 links.forEach { link ->

@@ -5,7 +5,7 @@ import de.tum.`in`.ase.apodini.configuration.ConfigurationBuilder
 import de.tum.`in`.ase.apodini.environment.EnvironmentKey
 import de.tum.`in`.ase.apodini.environment.EnvironmentKeys
 import de.tum.`in`.ase.apodini.environment.request
-import de.tum.`in`.ase.apodini.exporter.RESTExporter
+import de.tum.`in`.ase.apodini.exporter.REST
 import de.tum.`in`.ase.apodini.impl.text
 import de.tum.`in`.ase.apodini.impl.group
 import de.tum.`in`.ase.apodini.logging.logger
@@ -68,7 +68,7 @@ object TestWebService : WebService {
 
     override fun ConfigurationBuilder.configure() {
         use(PrintExporter)
-        use(RESTExporter(port = 8080))
+        use(REST(port = 8080))
 
         environment {
             secret {
@@ -129,7 +129,7 @@ class CurrentlyAuthenticatedUser : Handler<User?> {
     private val authenticated by authenticated(User)
     private val logger by environment { logger }
 
-    override suspend fun CoroutineScope.compute(): User? {
+    override suspend fun CoroutineScope.handle(): User? {
         if (authenticated == null) {
             logger.debug("User is not authenticated")
         }
@@ -146,7 +146,7 @@ class GreeterForUser(id: PathParameter) : Handler<String> {
     private val request by environment { request }
     private val logger by environment { logger }
 
-    override suspend fun CoroutineScope.compute(): String {
+    override suspend fun CoroutineScope.handle(): String {
         logger.info("Trying out logging")
         logger.debug {
             "Received id $id from $request"
@@ -160,7 +160,7 @@ class GreeterForUser(id: PathParameter) : Handler<String> {
 class PostsForUser(id: PathParameter) : Handler<String> {
     private val id by id
 
-    override suspend fun CoroutineScope.compute(): String {
+    override suspend fun CoroutineScope.handle(): String {
         return "Posts from user $id"
     }
 }
@@ -178,7 +178,7 @@ class Greeter: Handler<String> {
         default("World")
     }
 
-    override suspend fun CoroutineScope.compute(): String {
+    override suspend fun CoroutineScope.handle(): String {
         logger.debug("Received Secret: $secret")
         return "Hello, $name"
     }
@@ -188,7 +188,7 @@ private var message = "Hello, World"
 class MessageUpdater : Handler<String> {
     private val newValue by parameter<String>()
 
-    override suspend fun CoroutineScope.compute(): String {
+    override suspend fun CoroutineScope.handle(): String {
         return message.also { message = newValue }
     }
 }

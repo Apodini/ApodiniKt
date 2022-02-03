@@ -22,7 +22,7 @@ internal class ModifiedComponent(private val component: Component, private val m
 }
 
 internal class ModifiedHandler<T>(val handler: Handler<T>, val modifiers: List<Modifier>) : Handler<T> {
-    override suspend fun CoroutineScope.compute(): T {
+    override suspend fun CoroutineScope.handle(): T {
         throw IllegalArgumentException(
             "Unexpected call to `compute` to a handler wrapped in modifiers"
         )

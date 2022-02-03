@@ -29,7 +29,7 @@ class RequestHandlingTest : TestCase() {
     fun testObject() {
         val result = handle {
             +object : Handler<Foo> {
-                override suspend fun CoroutineScope.compute(): Foo {
+                override suspend fun CoroutineScope.handle(): Foo {
                     return Foo("Test", 42)
                 }
             }
@@ -41,7 +41,7 @@ class RequestHandlingTest : TestCase() {
     fun testArray() {
         val result = handle {
             +object : Handler<List<Int>> {
-                override suspend fun CoroutineScope.compute(): List<Int> {
+                override suspend fun CoroutineScope.handle(): List<Int> {
                     return listOf(1, 2, 3)
                 }
             }
@@ -55,7 +55,7 @@ class RequestHandlingTest : TestCase() {
             +object : Handler<String> {
                 val name by parameter<String>()
 
-                override suspend fun CoroutineScope.compute(): String {
+                override suspend fun CoroutineScope.handle(): String {
                     return "Hello, $name!"
                 }
             }
@@ -71,7 +71,7 @@ class RequestHandlingTest : TestCase() {
                 +object : Handler<String> {
                     val id by pathParameter
 
-                    override suspend fun CoroutineScope.compute(): String {
+                    override suspend fun CoroutineScope.handle(): String {
                         return "Hello from $id"
                     }
                 }
@@ -87,7 +87,7 @@ class RequestHandlingTest : TestCase() {
                 +object : Handler<String> {
                     val someSecret by environment { secret }
 
-                    override suspend fun CoroutineScope.compute(): String {
+                    override suspend fun CoroutineScope.handle(): String {
                         return "Secret = $someSecret. Don't tell anyone"
                     }
                 }
@@ -103,7 +103,7 @@ class RequestHandlingTest : TestCase() {
                 +object : Handler<String> {
                     val someSecret by environment { secret }
 
-                    override suspend fun CoroutineScope.compute(): String {
+                    override suspend fun CoroutineScope.handle(): String {
                         return "Secret = $someSecret. Don't tell anyone"
                     }
                 }
@@ -118,7 +118,7 @@ class RequestHandlingTest : TestCase() {
         assertFailsWith<IllegalArgumentException> {
             handle {
                 +object : Handler<String> {
-                    override suspend fun CoroutineScope.compute(): String {
+                    override suspend fun CoroutineScope.handle(): String {
                         throw IllegalArgumentException("Nope")
                     }
                 }.withEnvironment { logger { logger } }
